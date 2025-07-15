@@ -1,0 +1,270 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  username      String   @unique
+  displayName   String?  @map("display_name")
+  bio           String?
+  avatarUrl     String?  @map("avatar_url")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  posts                    Post[]
+  comments                 Comment[]
+  following                Follow[] @relation("UserFollowing")
+  followers                Follow[] @relation("UserFollowers")
+  subscriptions            Subscription[]
+  worryResolutions         WorryResolution[]
+  exerciseCompletions      UserExerciseCompletion[]
+  notifications            UserNotification[]
+  notificationPreferences  NotificationPreferences?
+  languagePreference       UserLanguagePreference?
+
+  @@map("users")
+}
+
+model Post {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  shortContent     String    @map("short_content")
+  longContent      String?   @map("long_content")
+  worryPrompt      String    @map("worry_prompt")
+  privacyLevel     String    @map("privacy_level") // 'public', 'friends', 'private'
+  isScheduled      Boolean   @default(false) @map("is_scheduled")
+  scheduledFor     DateTime? @map("scheduled_for")
+  publishedAt      DateTime? @map("published_at")
+  detectedLanguage String?   @map("detected_language")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments         Comment[]
+  worryAnalysis    WorryAnalysis?
+  worryResolution  WorryResolution?
+  exerciseCompletions UserExerciseCompletion[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id                String    @id @default(uuid())
+  postId            String    @map("post_id")
+  userId            String    @map("user_id")
+  content           String
+  moderationStatus  String    @default("pending") @map("moderation_status") // 'approved', 'flagged', 'rejected', 'pending'
+  moderationScore   Decimal?  @map("moderation_score") @db.Decimal(3, 2)
+  parentCommentId   String?   @map("parent_comment_id")
+  detectedLanguage  String?   @map("detected_language")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String    @map("user_id")
+  tier                 String    // 'free', 'paid', 'advanced'
+  status               String    // 'active', 'cancelled', 'expired'
+  stripeSubscriptionId String?   @map("stripe_subscription_id")
+  currentPeriodStart   DateTime? @map("current_period_start")
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model WorryAnalysis {
+  id                String   @id @default(uuid())
+  postId            String   @unique @map("post_id")
+  category          String
+  subcategory       String?
+  sentimentScore    Decimal? @map("sentiment_score") @db.Decimal(3, 2)
+  keywords          String[]
+  similarWorryCount Int      @default(0) @map("similar_worry_count")
+  analysisVersion   String   @default("1.0") @map("analysis_version")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("worry_analysis")
+}
+
+model AnalyticsCache {
+  id        String   @id @default(uuid())
+  cacheKey  String   @unique @map("cache_key")
+  data      Json
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("analytics_cache")
+}
+
+model WorryResolution {
+  id                 String   @id @default(uuid())
+  postId             String   @unique @map("post_id")
+  userId             String   @map("user_id")
+  resolutionStory    String?  @map("resolution_story")
+  copingMethods      String[]  @map("coping_methods")
+  helpfulnessRating  Int?     @map("helpfulness_rating") // 1-5
+  resolvedAt         DateTime @default(now()) @map("resolved_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("worry_resolutions")
+}
+
+model GuidedExercise {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  category        String
+  instructions    Json
+  durationMinutes Int?     @map("duration_minutes")
+  difficultyLevel String?  @map("difficulty_level") // 'beginner', 'intermediate', 'advanced'
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  completions UserExerciseCompletion[]
+
+  @@map("guided_exercises")
+}
+
+model UserExerciseCompletion {
+  id                  String   @id @default(uuid())
+  userId              String   @map("user_id")
+  exerciseId          String   @map("exercise_id")
+  postId              String?  @map("post_id")
+  effectivenessRating Int?     @map("effectiveness_rating") // 1-5
+  notes               String?
+  completedAt         DateTime @default(now()) @map("completed_at")
+
+  // Relations
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise GuidedExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  post     Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("user_exercise_completions")
+}
+
+model MentalHealthResource {
+  id              String   @id @default(uuid())
+  name            String
+  type            String   // 'crisis_hotline', 'therapy', 'support_group', 'online_resource'
+  description     String?
+  phoneNumber     String?  @map("phone_number")
+  websiteUrl      String?  @map("website_url")
+  location        String?
+  countryCode     String?  @map("country_code")
+  isCrisisResource Boolean @default(false) @map("is_crisis_resource")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("mental_health_resources")
+}
+
+model UserNotification {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  type         String
+  title        String
+  message      String
+  isRead       Boolean   @default(false) @map("is_read")
+  scheduledFor DateTime? @map("scheduled_for")
+  sentAt       DateTime? @map("sent_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notifications")
+}
+
+model NotificationPreferences {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique @map("user_id")
+  checkInFrequency       String   @default("weekly") @map("check_in_frequency") // 'daily', 'weekly', 'monthly', 'never'
+  supportiveMessages     Boolean  @default(true) @map("supportive_messages")
+  communityInteractions  Boolean  @default(true) @map("community_interactions")
+  quietHoursStart        String   @default("22:00") @map("quiet_hours_start")
+  quietHoursEnd          String   @default("08:00") @map("quiet_hours_end")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model SupportedLanguage {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  name       String
+  nativeName String   @map("native_name")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  userPreferences UserLanguagePreference[]
+
+  @@map("supported_languages")
+}
+
+model UserLanguagePreference {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  languageCode String   @map("language_code")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language SupportedLanguage @relation(fields: [languageCode], references: [code])
+
+  @@map("user_language_preferences")
+}
