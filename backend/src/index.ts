@@ -17,13 +17,19 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-});
-app.use('/api', limiter);
+// Rate limiting - disabled in development for testing
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests in production
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api', limiter);
+} else {
+  console.log('🔓 Rate limiting disabled in development mode');
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -41,10 +47,12 @@ app.get('/api/health', (req, res) => {
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import postRoutes from './routes/posts';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

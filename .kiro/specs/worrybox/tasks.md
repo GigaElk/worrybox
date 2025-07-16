@@ -23,11 +23,17 @@
   - Create user profile update API endpoints (PUT /api/users/profile)
   - Build user profile management React components with form validation
   - Create user search and discovery API (GET /api/users/search)
+
+
+
   - Add avatar upload functionality with file storage
   - Build user profile page and edit profile components
   - _Requirements: 8.1, 4.1, 4.2_
 
-- [ ] 4. Build core worry posting system
+- [x] 4. Build core worry posting system
+
+
+
   - Create worry post data models and database schema
   - Implement worry post creation API with prompt selection
   - Build worry posting React component with character limits
@@ -35,7 +41,10 @@
   - Implement post editing and deletion capabilities
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1_
 
-- [ ] 5. Add extended blog functionality to worry posts
+- [x] 5. Add extended blog functionality to worry posts
+
+
+
   - Extend post model to support long-form content
   - Create API endpoints for adding detailed blog content to worry posts
   - Build expandable post component with "more" button functionality

@@ -12,8 +12,8 @@ const Sidebar = () => {
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
+    { name: 'Feed', href: '/feed', icon: PlusCircle },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-    { name: 'New Worry', href: '/new', icon: PlusCircle },
     { name: 'Community', href: '/community', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]

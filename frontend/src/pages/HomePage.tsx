@@ -25,8 +25,8 @@ const HomePage = () => {
             <p className="text-gray-600 mb-4">
               Get it out of your head and onto paper. Sometimes that's all it takes.
             </p>
-            <Link to="/new" className="btn-primary">
-              New Worry Post
+            <Link to="/feed" className="btn-primary">
+              Go to Feed
             </Link>
           </div>
           
@@ -35,7 +35,7 @@ const HomePage = () => {
             <p className="text-gray-600 mb-4">
               See how others are coping and offer support to those who need it.
             </p>
-            <Link to="/community" className="btn-outline">
+            <Link to="/feed" className="btn-outline">
               Browse Community
             </Link>
           </div>
