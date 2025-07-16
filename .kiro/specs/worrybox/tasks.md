@@ -57,6 +57,7 @@
   - Implement post visibility filtering logic in feed queries
   - Build privacy settings management for existing posts
   - Add privacy indicators in post display components
+
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
 - [ ] 7. Create social following system
@@ -80,6 +81,8 @@
   - Create comment moderation pipeline with flagging logic
   - Build moderation queue interface for manual review
   - Implement comment approval/rejection workflow
+
+
   - Add fallback rule-based filtering for AI service failures
   - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 

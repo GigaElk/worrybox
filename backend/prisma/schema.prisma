@@ -25,6 +25,7 @@ model User {
   // Relations
   posts                    Post[]
   comments                 Comment[]
+  likes                    Like[]
   following                Follow[] @relation("UserFollowing")
   followers                Follow[] @relation("UserFollowers")
   subscriptions            Subscription[]
@@ -54,6 +55,7 @@ model Post {
   // Relations
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments         Comment[]
+  likes            Like[]
   worryAnalysis    WorryAnalysis?
   worryResolution  WorryResolution?
   exerciseCompletions UserExerciseCompletion[]
@@ -94,6 +96,20 @@ model Follow {
 
   @@unique([followerId, followingId])
   @@map("follows")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  postId    String   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("likes")
 }
 
 model Subscription {
