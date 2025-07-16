@@ -3,6 +3,8 @@ import { PostResponse } from '../services/postService'
 import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileText, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
+import LikeButton from './LikeButton'
+import CommentSection from './CommentSection'
 
 interface PostCardProps {
   post: PostResponse
@@ -225,6 +227,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
           </div>
         )}
       </div>
+
+      {/* Social Actions */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <LikeButton postId={post.id} />
+        </div>
+      </div>
+
+      {/* Comments Section */}
+      <CommentSection postId={post.id} />
 
       {/* Click outside to close menu */}
       {showMenu && (
