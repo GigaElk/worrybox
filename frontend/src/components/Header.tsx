@@ -29,6 +29,12 @@ const Header = () => {
             >
               Home
             </Link>
+            <Link 
+              to="/feed" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Feed
+            </Link>
             {isAuthenticated && (
               <Link 
                 to="/dashboard" 

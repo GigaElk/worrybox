@@ -268,3 +268,14 @@ model UserLanguagePreference {
 
   @@map("user_language_preferences")
 }
+
+model WorryPrompt {
+  id          String   @id @default(uuid())
+  text        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("worry_prompts")
+}

@@ -54,6 +54,7 @@ export class AuthController {
       // Check validation results
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log('❌ Validation errors:', errors.array());
         return res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
@@ -65,14 +66,18 @@ export class AuthController {
         });
       }
 
+      console.log('📝 Registration attempt:', { email: req.body.email, username: req.body.username });
       const registerData: RegisterRequest = req.body;
       const result = await authService.register(registerData);
 
+      console.log('✅ Registration successful for:', req.body.username);
       res.status(201).json({
         message: 'Registration successful',
         data: result,
       });
     } catch (error: any) {
+      console.error('❌ Registration failed:', error.message);
+      console.error('Full error:', error);
       res.status(400).json({
         error: {
           code: 'REGISTRATION_FAILED',
@@ -295,6 +300,114 @@ export class AuthController {
         error: {
           code: 'PROFILE_FETCH_FAILED',
           message: 'Failed to fetch user profile',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  async checkEmailAvailability(req: Request, res: Response) {
+    try {
+      const { email } = req.params;
+
+      if (!email) {
+        return res.status(400).json({
+          error: {
+            code: 'MISSING_EMAIL',
+            message: 'Email is required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          error: {
+            code: 'INVALID_EMAIL',
+            message: 'Please provide a valid email address',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const isAvailable = await authService.checkEmailAvailability(email);
+
+      res.json({
+        data: {
+          email,
+          available: isAvailable,
+          suggestion: isAvailable ? null : 'This email is already registered. Did you mean to log in instead?',
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: {
+          code: 'EMAIL_CHECK_FAILED',
+          message: 'Failed to check email availability',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  async checkUsernameAvailability(req: Request, res: Response) {
+    try {
+      const { username } = req.params;
+
+      if (!username) {
+        return res.status(400).json({
+          error: {
+            code: 'MISSING_USERNAME',
+            message: 'Username is required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      // Basic username validation
+      if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 30) {
+        return res.status(400).json({
+          error: {
+            code: 'INVALID_USERNAME',
+            message: 'Username must be 3-30 characters and contain only letters, numbers, and underscores',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const isAvailable = await authService.checkUsernameAvailability(username);
+
+      // Generate suggestions if username is taken
+      let suggestions: string[] = [];
+      if (!isAvailable) {
+        suggestions = [
+          `${username}1`,
+          `${username}2`,
+          `${username}_`,
+          `${username}${new Date().getFullYear()}`,
+        ];
+      }
+
+      res.json({
+        data: {
+          username,
+          available: isAvailable,
+          suggestions: isAvailable ? [] : suggestions,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: {
+          code: 'USERNAME_CHECK_FAILED',
+          message: 'Failed to check username availability',
         },
         timestamp: new Date().toISOString(),
         path: req.path,

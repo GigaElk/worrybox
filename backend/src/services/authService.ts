@@ -219,4 +219,18 @@ export class AuthService {
       },
     });
   }
+
+  async checkEmailAvailability(email: string): Promise<boolean> {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    return !existingUser;
+  }
+
+  async checkUsernameAvailability(username: string): Promise<boolean> {
+    const existingUser = await prisma.user.findUnique({
+      where: { username: username.toLowerCase() },
+    });
+    return !existingUser;
+  }
 }
