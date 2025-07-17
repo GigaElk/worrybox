@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { PostResponse } from '../services/postService'
-import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileText, Plus } from 'lucide-react'
+import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileText, Plus, Brain } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import LikeButton from './LikeButton'
 import CommentSection from './CommentSection'
+import SimilarWorries from './SimilarWorries'
 
 interface PostCardProps {
   post: PostResponse
@@ -228,10 +229,27 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
         )}
       </div>
 
+      {/* Similar Worries */}
+      {post.privacyLevel === 'public' && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <SimilarWorries postId={post.id} limit={3} />
+        </div>
+      )}
+
       {/* Social Actions */}
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <LikeButton postId={post.id} />
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => window.open(`/analysis/${post.id}`, '_blank')}
+              className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+              title="View detailed analysis"
+            >
+              <Brain className="w-4 h-4" />
+              <span>Analysis</span>
+            </button>
+          </div>
         </div>
       </div>
 
