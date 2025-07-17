@@ -115,9 +115,10 @@
   - Create comment React components with moderation status display
   - Add comment flagging and reporting features
   - Integrate with AI moderation pipeline for real-time filtering
+
   - _Requirements: 6.1, 6.2, 6.7, 7.1, 7.6_
 
-- [ ] 11. Implement AI worry analysis and similarity matching
+- [x] 11. Implement AI worry analysis and similarity matching
   - Create worry analysis API using OpenAI for content categorization
   - Build similarity matching algorithm for worry content
   - Implement anonymous worry count calculation and display
@@ -125,15 +126,15 @@
   - Add similar worry count updates and caching
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
-- [ ] 12. Build subscription management system
-  - Integrate Stripe payment processing for subscription handling
+- [x] 12. Build subscription management system
+  - Integrate LemonSqueezy payment processing for subscription handling
   - Create subscription tier management API and database models
   - Implement subscription upgrade/downgrade functionality
   - Build subscription management UI components
   - Add feature access control based on subscription tiers
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-- [ ] 13. Create personal analytics for paid users
+- [x] 13. Create personal analytics for paid users
   - Build personal worry analytics API endpoints
   - Implement worry frequency and trend analysis
   - Create analytics dashboard React components
@@ -143,6 +144,9 @@
 
 - [ ] 14. Implement advanced demographic analytics
   - Create anonymous demographic data aggregation system
+
+
+
   - Build advanced analytics API with privacy protection
   - Implement worry heat map generation and visualization
   - Create demographic breakdown analytics with minimum sample sizes

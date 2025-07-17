@@ -116,15 +116,23 @@ model Like {
 }
 
 model Subscription {
-  id                   String    @id @default(uuid())
-  userId               String    @map("user_id")
-  tier                 String    // 'free', 'paid', 'advanced'
-  status               String    // 'active', 'cancelled', 'expired'
-  stripeSubscriptionId String?   @map("stripe_subscription_id")
-  currentPeriodStart   DateTime? @map("current_period_start")
-  currentPeriodEnd     DateTime? @map("current_period_end")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
+  id                      String    @id @default(uuid())
+  userId                  String    @map("user_id")
+  tier                    String    // 'free', 'supporter', 'premium'
+  status                  String    // 'active', 'cancelled', 'expired', 'past_due', 'unpaid'
+  lemonSqueezyId          String?   @unique @map("lemonsqueezy_id") // LemonSqueezy subscription ID
+  lemonSqueezyCustomerId  String?   @map("lemonsqueezy_customer_id")
+  lemonSqueezyProductId   String?   @map("lemonsqueezy_product_id")
+  lemonSqueezyVariantId   String?   @map("lemonsqueezy_variant_id")
+  currentPeriodStart      DateTime? @map("current_period_start")
+  currentPeriodEnd        DateTime? @map("current_period_end")
+  trialEndsAt             DateTime? @map("trial_ends_at")
+  renewsAt                DateTime? @map("renews_at")
+  endsAt                  DateTime? @map("ends_at")
+  isUsageBased            Boolean   @default(false) @map("is_usage_based")
+  subscriptionItemId      String?   @map("subscription_item_id")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
