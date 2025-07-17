@@ -12,7 +12,11 @@ import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfilePage from './pages/ProfilePage'
 import EditProfilePage from './pages/EditProfilePage'
 import WorryAnalysisPage from './pages/WorryAnalysisPage'
+import PricingPage from './pages/PricingPage'
+import AnalyticsPage from './pages/AnalyticsPage'
+import DemographicAnalyticsPage from './pages/DemographicAnalyticsPage'
 import { AuthProvider } from './contexts/AuthContext'
+import { SubscriptionProvider } from './contexts/SubscriptionContext'
 
 function App() {
   const [isLoading, setIsLoading] = useState(true)
@@ -39,23 +43,28 @@ function App() {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="feed" element={<FeedPage />} />
-          </Route>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<EditProfilePage />} />
-          <Route path="/analysis/:postId" element={<WorryAnalysisPage />} />
-        </Routes>
-      </div>
+      <SubscriptionProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="feed" element={<FeedPage />} />
+            </Route>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/profile/:username" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<EditProfilePage />} />
+            <Route path="/analysis/:postId" element={<WorryAnalysisPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/demographics" element={<DemographicAnalyticsPage />} />
+          </Routes>
+        </div>
+      </SubscriptionProvider>
     </AuthProvider>
   )
 }
