@@ -53,6 +53,7 @@ import likeRoutes from './routes/likes';
 import commentRoutes from './routes/comments';
 import schedulingRoutes from './routes/scheduling';
 import moderationRoutes from './routes/moderation';
+import worryAnalysisRoutes from './routes/worryAnalysis';
 import { SchedulingService } from './services/schedulingService';
 
 // API routes
@@ -64,6 +65,7 @@ app.use('/api/likes', likeRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/scheduling', schedulingRoutes);
 app.use('/api/moderation', moderationRoutes);
+app.use('/api/analysis', worryAnalysisRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
