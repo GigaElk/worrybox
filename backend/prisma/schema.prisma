@@ -34,6 +34,7 @@ model User {
   notifications            UserNotification[]
   notificationPreferences  NotificationPreferences?
   languagePreference       UserLanguagePreference?
+  commentReports           CommentReport[] @relation("CommentReports")
 
   @@map("users")
 }
@@ -81,6 +82,7 @@ model Comment {
   parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         Comment[] @relation("CommentReplies")
   moderationQueue ModerationQueue?
+  reports         CommentReport[]
 
   @@map("comments")
 }
@@ -313,4 +315,20 @@ model ModerationQueue {
 
   @@unique([commentId])
   @@map("moderation_queue")
+}
+
+model CommentReport {
+  id         String   @id @default(uuid())
+  commentId  String   @map("comment_id")
+  reporterId String   @map("reporter_id")
+  reason     String   // 'spam', 'harassment', 'inappropriate', 'misinformation', 'other'
+  details    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  comment  Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporter User    @relation("CommentReports", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, reporterId]) // Prevent duplicate reports from same user
+  @@map("comment_reports")
 }

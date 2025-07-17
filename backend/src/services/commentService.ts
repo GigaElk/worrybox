@@ -6,6 +6,7 @@ const moderationService = new ModerationService();
 
 export interface CreateCommentRequest {
   content: string;
+  parentCommentId?: string; // For nested replies
 }
 
 export interface UpdateCommentRequest {
@@ -17,6 +18,7 @@ export interface CommentResponse {
   content: string;
   userId: string;
   postId: string;
+  parentCommentId?: string;
   moderationStatus: string;
   moderationScore?: number;
   createdAt: string;
@@ -27,6 +29,13 @@ export interface CommentResponse {
     displayName?: string;
     avatarUrl?: string;
   };
+  replies?: CommentResponse[];
+  replyCount?: number;
+}
+
+export interface ReportCommentRequest {
+  reason: 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other';
+  details?: string;
 }
 
 export class CommentService {
@@ -40,12 +49,28 @@ export class CommentService {
       throw new Error('Post not found');
     }
 
+    // Validate parent comment if provided
+    if (data.parentCommentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: data.parentCommentId }
+      });
+
+      if (!parentComment) {
+        throw new Error('Parent comment not found');
+      }
+
+      if (parentComment.postId !== postId) {
+        throw new Error('Parent comment does not belong to this post');
+      }
+    }
+
     // Create comment with pending moderation status
     const comment = await prisma.comment.create({
       data: {
         content: data.content,
         userId,
         postId,
+        parentCommentId: data.parentCommentId,
         moderationStatus: 'pending' // All new comments start as pending
       },
       include: {
@@ -244,6 +269,179 @@ export class CommentService {
   }
 
   /**
+   * Get comments with nested threading for a post
+   */
+  async getCommentsWithReplies(
+    postId: string,
+    limit = 20,
+    offset = 0,
+    includeModerated = false
+  ): Promise<{ comments: CommentResponse[], total: number, hasMore: boolean }> {
+    // Check if post exists
+    const post = await prisma.post.findUnique({
+      where: { id: postId }
+    });
+
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    // Filter out rejected comments by default
+    const whereClause: any = {
+      postId,
+      parentCommentId: null, // Only get top-level comments
+      moderationStatus: includeModerated 
+        ? { not: 'rejected' } 
+        : 'approved'
+    };
+
+    const [topLevelComments, total] = await Promise.all([
+      prisma.comment.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true
+            }
+          },
+          replies: {
+            where: {
+              moderationStatus: includeModerated 
+                ? { not: 'rejected' } 
+                : 'approved'
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  avatarUrl: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      }),
+      prisma.comment.count({
+        where: whereClause
+      })
+    ]);
+
+    const formattedComments = topLevelComments.map(comment => {
+      const formatted = this.formatCommentResponse(comment);
+      formatted.replies = comment.replies?.map(reply => this.formatCommentResponse(reply)) || [];
+      formatted.replyCount = comment.replies?.length || 0;
+      return formatted;
+    });
+
+    return {
+      comments: formattedComments,
+      total,
+      hasMore: offset + topLevelComments.length < total
+    };
+  }
+
+  /**
+   * Report a comment for inappropriate content
+   */
+  async reportComment(
+    commentId: string, 
+    reporterId: string, 
+    data: ReportCommentRequest
+  ): Promise<void> {
+    // Check if comment exists
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId }
+    });
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    // Check if user has already reported this comment
+    const existingReport = await prisma.commentReport.findFirst({
+      where: {
+        commentId,
+        reporterId
+      }
+    });
+
+    if (existingReport) {
+      throw new Error('You have already reported this comment');
+    }
+
+    // Create the report
+    await prisma.commentReport.create({
+      data: {
+        commentId,
+        reporterId,
+        reason: data.reason,
+        details: data.details
+      }
+    });
+
+    // If this comment gets multiple reports, flag it for review
+    const reportCount = await prisma.commentReport.count({
+      where: { commentId }
+    });
+
+    // Flag comment if it has 3 or more reports
+    if (reportCount >= 3 && comment.moderationStatus === 'approved') {
+      await moderationService.updateCommentModerationStatus(
+        commentId,
+        'flagged',
+        0.8, // High score due to multiple reports
+        [`Multiple user reports (${reportCount} reports)`, `Primary reason: ${data.reason}`]
+      );
+    }
+  }
+
+  /**
+   * Get reports for a comment (admin only)
+   */
+  async getCommentReports(commentId: string): Promise<any[]> {
+    return prisma.commentReport.findMany({
+      where: { commentId },
+      include: {
+        reporter: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  }
+
+  /**
+   * Get reply count for a comment
+   */
+  async getReplyCount(commentId: string): Promise<number> {
+    return prisma.comment.count({
+      where: {
+        parentCommentId: commentId,
+        moderationStatus: 'approved'
+      }
+    });
+  }
+
+  /**
    * Helper method to format comment response consistently
    */
   private formatCommentResponse(comment: any): CommentResponse {
@@ -252,6 +450,7 @@ export class CommentService {
       content: comment.content,
       userId: comment.userId,
       postId: comment.postId,
+      parentCommentId: comment.parentCommentId || undefined,
       moderationStatus: comment.moderationStatus,
       moderationScore: comment.moderationScore ? parseFloat(comment.moderationScore.toString()) : undefined,
       createdAt: comment.createdAt.toISOString(),

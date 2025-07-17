@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="frontend/src/assets/WorryBoxLogoConcept.png" alt="WorryBox Logo" width="400">
+</div>
+
 # Worrybox
 
 A compassionate social platform designed to help users externalize their worries through structured posting, optional elaboration, and supportive community interaction.

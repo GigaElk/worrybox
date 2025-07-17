@@ -99,11 +99,19 @@
 
 
   - Add fallback rule-based filtering for AI service failures
+
+
+
   - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
 - [ ] 10. Create commenting system with safety features
   - Build comment creation and display API endpoints
   - Implement nested comment threading functionality
+
+
+
+
+
   - Create comment React components with moderation status display
   - Add comment flagging and reporting features
   - Integrate with AI moderation pipeline for real-time filtering
