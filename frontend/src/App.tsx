@@ -11,6 +11,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import ProfilePage from './pages/ProfilePage'
 import EditProfilePage from './pages/EditProfilePage'
+import WorryAnalysisPage from './pages/WorryAnalysisPage'
 import { AuthProvider } from './contexts/AuthContext'
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/profile/:username" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />
+          <Route path="/analysis/:postId" element={<WorryAnalysisPage />} />
         </Routes>
       </div>
     </AuthProvider>
