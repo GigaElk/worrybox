@@ -150,12 +150,12 @@
   - Add trending topics and seasonal pattern analysis
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7_
 
-- [ ] 15. Build worry resolution tracking system
+- [x] 15. Build worry resolution tracking system
+
+
 
 
   - Add resolution status fields to post model and API
-
-
 
   - Create worry resolution marking functionality
   - Implement resolution story capture and display
@@ -163,10 +163,7 @@
   - Add resolution success story sharing features
   - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
 
-
-
-
-- [ ] 16. Create guided exercises and coping techniques
+- [x] 16. Create guided exercises and coping techniques
   - Build guided exercises database and content management
   - Implement AI-powered exercise recommendation system
   - Create exercise library with CBT techniques and breathing exercises

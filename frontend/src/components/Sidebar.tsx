@@ -14,6 +14,7 @@ const Sidebar = () => {
     { name: 'Home', href: '/', icon: Home },
     { name: 'Feed', href: '/feed', icon: PlusCircle },
     { name: 'Wellness', href: '/wellness', icon: Heart },
+    { name: 'Resolution Stories', href: '/resolution-stories', icon: CheckCircle },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Community', href: '/community', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
