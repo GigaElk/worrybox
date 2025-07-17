@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { seedGuidedExercisesAndTechniques } from '../src/seeds/guidedExerciseSeeds'
 
 const prisma = new PrismaClient()
 
@@ -25,6 +26,9 @@ async function main() {
     })
   }
   console.log(`✅ Created ${worryPrompts.length} worry prompts`)
+
+  // Seed guided exercises and coping techniques
+  await seedGuidedExercisesAndTechniques()
 
   console.log('🎉 Seed completed successfully!')
 }

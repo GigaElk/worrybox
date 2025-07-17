@@ -57,6 +57,7 @@ import worryAnalysisRoutes from './routes/worryAnalysis';
 import subscriptionRoutes from './routes/subscriptions';
 import analyticsRoutes from './routes/analytics';
 import demographicAnalyticsRoutes from './routes/demographicAnalytics';
+import worryResolutionRoutes from './routes/worryResolution';
 import { SchedulingService } from './services/schedulingService';
 
 // API routes
@@ -72,6 +73,7 @@ app.use('/api/analysis', worryAnalysisRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/demographics', demographicAnalyticsRoutes);
+app.use('/api/resolutions', worryResolutionRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

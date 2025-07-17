@@ -15,6 +15,12 @@ import WorryAnalysisPage from './pages/WorryAnalysisPage'
 import PricingPage from './pages/PricingPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import DemographicAnalyticsPage from './pages/DemographicAnalyticsPage'
+import WellnessDashboard from './pages/WellnessDashboard'
+import ExercisesPage from './pages/ExercisesPage'
+import CopingTechniquesPage from './pages/CopingTechniquesPage'
+import ExerciseDetail from './components/ExerciseDetail'
+import CopingTechniqueDetail from './components/CopingTechniqueDetail'
+import ResolutionStoriesPage from './pages/ResolutionStoriesPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 
@@ -50,6 +56,12 @@ function App() {
               <Route index element={<HomePage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="feed" element={<FeedPage />} />
+              <Route path="wellness" element={<WellnessDashboard />} />
+              <Route path="wellness/exercises" element={<ExercisesPage />} />
+              <Route path="wellness/exercises/:id" element={<ExerciseDetail />} />
+              <Route path="wellness/techniques" element={<CopingTechniquesPage />} />
+              <Route path="wellness/techniques/:id" element={<CopingTechniqueDetail />} />
+              <Route path="resolution-stories" element={<ResolutionStoriesPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

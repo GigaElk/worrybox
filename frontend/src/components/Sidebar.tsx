@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, PlusCircle, Users, Settings, BarChart3 } from 'lucide-react'
+import { Home, PlusCircle, Users, Settings, BarChart3, Heart, CheckCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const Sidebar = () => {
@@ -13,6 +13,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Feed', href: '/feed', icon: PlusCircle },
+    { name: 'Wellness', href: '/wellness', icon: Heart },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Community', href: '/community', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
