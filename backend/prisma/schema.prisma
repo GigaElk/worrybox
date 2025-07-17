@@ -80,6 +80,7 @@ model Comment {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         Comment[] @relation("CommentReplies")
+  moderationQueue ModerationQueue?
 
   @@map("comments")
 }
@@ -294,4 +295,22 @@ model WorryPrompt {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("worry_prompts")
+}
+
+model ModerationQueue {
+  id              String    @id @default(uuid())
+  commentId       String    @map("comment_id")
+  flaggedReasons  String[]  @map("flagged_reasons")
+  status          String    @default("pending") // 'pending', 'reviewed'
+  reviewedBy      String?   @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewNotes     String?   @map("review_notes")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId])
+  @@map("moderation_queue")
 }

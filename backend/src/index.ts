@@ -48,11 +48,22 @@ app.get('/api/health', (req, res) => {
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import postRoutes from './routes/posts';
+import followRoutes from './routes/follows';
+import likeRoutes from './routes/likes';
+import commentRoutes from './routes/comments';
+import schedulingRoutes from './routes/scheduling';
+import moderationRoutes from './routes/moderation';
+import { SchedulingService } from './services/schedulingService';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/follows', followRoutes);
+app.use('/api/likes', likeRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/scheduling', schedulingRoutes);
+app.use('/api/moderation', moderationRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
@@ -83,4 +94,8 @@ app.listen(PORT, () => {
   console.log(`🚀 Worrybox API server running on port ${PORT}`);
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Start the post scheduler
+  const scheduler = SchedulingService.getInstance();
+  scheduler.startScheduler();
 });

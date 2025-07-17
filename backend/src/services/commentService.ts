@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { ModerationService } from './moderationService';
 
 const prisma = new PrismaClient();
+const moderationService = new ModerationService();
 
 export interface CreateCommentRequest {
   content: string;
@@ -15,6 +17,8 @@ export interface CommentResponse {
   content: string;
   userId: string;
   postId: string;
+  moderationStatus: string;
+  moderationScore?: number;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -36,12 +40,13 @@ export class CommentService {
       throw new Error('Post not found');
     }
 
-    // Create comment
+    // Create comment with pending moderation status
     const comment = await prisma.comment.create({
       data: {
         content: data.content,
         userId,
-        postId
+        postId,
+        moderationStatus: 'pending' // All new comments start as pending
       },
       include: {
         user: {
@@ -55,20 +60,22 @@ export class CommentService {
       }
     });
 
-    return {
-      id: comment.id,
-      content: comment.content,
-      userId: comment.userId,
-      postId: comment.postId,
-      createdAt: comment.createdAt.toISOString(),
-      updatedAt: comment.updatedAt.toISOString(),
-      user: {
-        id: comment.user.id,
-        username: comment.user.username,
-        displayName: comment.user.displayName || undefined,
-        avatarUrl: comment.user.avatarUrl || undefined
-      }
-    };
+    // Trigger AI moderation in the background (don't await to avoid blocking)
+    moderationService.moderateComment(comment.id, comment.content)
+      .then(result => {
+        // Update comment with moderation results
+        moderationService.updateCommentModerationStatus(
+          comment.id,
+          result.status,
+          result.score,
+          result.reasons
+        );
+      })
+      .catch(error => {
+        console.error(`Failed to moderate comment ${comment.id}:`, error);
+      });
+
+    return this.formatCommentResponse(comment);
   }
 
   async updateComment(commentId: string, userId: string, data: UpdateCommentRequest): Promise<CommentResponse> {
@@ -84,13 +91,15 @@ export class CommentService {
       throw new Error('Comment not found or you do not have permission to edit it');
     }
 
-    // Update comment
+    // Update comment and reset moderation status to pending
     const comment = await prisma.comment.update({
       where: {
         id: commentId
       },
       data: {
         content: data.content,
+        moderationStatus: 'pending', // Reset to pending after edit
+        moderationScore: null,
         updatedAt: new Date()
       },
       include: {
@@ -105,20 +114,22 @@ export class CommentService {
       }
     });
 
-    return {
-      id: comment.id,
-      content: comment.content,
-      userId: comment.userId,
-      postId: comment.postId,
-      createdAt: comment.createdAt.toISOString(),
-      updatedAt: comment.updatedAt.toISOString(),
-      user: {
-        id: comment.user.id,
-        username: comment.user.username,
-        displayName: comment.user.displayName || undefined,
-        avatarUrl: comment.user.avatarUrl || undefined
-      }
-    };
+    // Trigger AI moderation for updated comment
+    moderationService.moderateComment(comment.id, comment.content)
+      .then(result => {
+        // Update comment with moderation results
+        moderationService.updateCommentModerationStatus(
+          comment.id,
+          result.status,
+          result.score,
+          result.reasons
+        );
+      })
+      .catch(error => {
+        console.error(`Failed to moderate updated comment ${comment.id}:`, error);
+      });
+
+    return this.formatCommentResponse(comment);
   }
 
   async deleteComment(commentId: string, userId: string): Promise<void> {
@@ -162,23 +173,15 @@ export class CommentService {
       return null;
     }
 
-    return {
-      id: comment.id,
-      content: comment.content,
-      userId: comment.userId,
-      postId: comment.postId,
-      createdAt: comment.createdAt.toISOString(),
-      updatedAt: comment.updatedAt.toISOString(),
-      user: {
-        id: comment.user.id,
-        username: comment.user.username,
-        displayName: comment.user.displayName || undefined,
-        avatarUrl: comment.user.avatarUrl || undefined
-      }
-    };
+    return this.formatCommentResponse(comment);
   }
 
-  async getCommentsByPost(postId: string, limit = 20, offset = 0): Promise<{ comments: CommentResponse[], total: number, hasMore: boolean }> {
+  async getCommentsByPost(
+    postId: string, 
+    limit = 20, 
+    offset = 0,
+    includeModerated = false // Option to include pending/flagged comments for moderators
+  ): Promise<{ comments: CommentResponse[], total: number, hasMore: boolean }> {
     // Check if post exists
     const post = await prisma.post.findUnique({
       where: { id: postId }
@@ -188,11 +191,17 @@ export class CommentService {
       throw new Error('Post not found');
     }
 
+    // Filter out rejected comments by default, optionally include pending/flagged
+    const whereClause: any = {
+      postId,
+      moderationStatus: includeModerated 
+        ? { not: 'rejected' } // Show all except rejected
+        : 'approved' // Only show approved
+    };
+
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
-        where: {
-          postId
-        },
+        where: whereClause,
         include: {
           user: {
             select: {
@@ -210,37 +219,49 @@ export class CommentService {
         skip: offset
       }),
       prisma.comment.count({
-        where: {
-          postId
-        }
+        where: whereClause
       })
     ]);
 
     return {
-      comments: comments.map(comment => ({
-        id: comment.id,
-        content: comment.content,
-        userId: comment.userId,
-        postId: comment.postId,
-        createdAt: comment.createdAt.toISOString(),
-        updatedAt: comment.updatedAt.toISOString(),
-        user: {
-          id: comment.user.id,
-          username: comment.user.username,
-          displayName: comment.user.displayName || undefined,
-          avatarUrl: comment.user.avatarUrl || undefined
-        }
-      })),
+      comments: comments.map(comment => this.formatCommentResponse(comment)),
       total,
       hasMore: offset + comments.length < total
     };
   }
 
-  async getCommentCount(postId: string): Promise<number> {
+  async getCommentCount(postId: string, includeModerated = false): Promise<number> {
+    const whereClause: any = {
+      postId,
+      moderationStatus: includeModerated 
+        ? { not: 'rejected' } 
+        : 'approved'
+    };
+
     return prisma.comment.count({
-      where: {
-        postId
-      }
+      where: whereClause
     });
+  }
+
+  /**
+   * Helper method to format comment response consistently
+   */
+  private formatCommentResponse(comment: any): CommentResponse {
+    return {
+      id: comment.id,
+      content: comment.content,
+      userId: comment.userId,
+      postId: comment.postId,
+      moderationStatus: comment.moderationStatus,
+      moderationScore: comment.moderationScore ? parseFloat(comment.moderationScore.toString()) : undefined,
+      createdAt: comment.createdAt.toISOString(),
+      updatedAt: comment.updatedAt.toISOString(),
+      user: {
+        id: comment.user.id,
+        username: comment.user.username,
+        displayName: comment.user.displayName || undefined,
+        avatarUrl: comment.user.avatarUrl || undefined
+      }
+    };
   }
 }

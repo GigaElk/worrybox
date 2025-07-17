@@ -179,9 +179,22 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '' 
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-sm">
-                          {comment.user.displayName || comment.user.username}
-                        </p>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium text-sm">
+                            {comment.user.displayName || comment.user.username}
+                          </p>
+                          {comment.moderationStatus && comment.moderationStatus !== 'approved' && (
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              comment.moderationStatus === 'pending' 
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : comment.moderationStatus === 'flagged'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {comment.moderationStatus}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500">
                           {formatDate(comment.createdAt)}
                           {comment.updatedAt !== comment.createdAt && ' (edited)'}
