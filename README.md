@@ -129,6 +129,8 @@ Frontend specific:
 
 This project follows a spec-driven development approach. See the `.kiro/specs/worrybox/` directory for detailed requirements, design, and implementation tasks.
 
+📜 [Code of Conduct](CODE_OF_CONDUCT.md) — We’re committed to respectful and inclusive collaboration.
+
 ## License
 
 MIT License - see LICENSE file for details.
