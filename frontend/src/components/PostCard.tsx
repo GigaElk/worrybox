@@ -1,11 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { PostResponse } from '../services/postService'
-import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileText, Plus, Brain } from 'lucide-react'
+import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileText, Plus, Brain, CheckCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import LikeButton from './LikeButton'
 import CommentSection from './CommentSection'
 import SimilarWorries from './SimilarWorries'
+import ResolutionModal from './ResolutionModal'
+import ResolutionDisplay from './ResolutionDisplay'
+import { worryResolutionService, WorryResolution } from '../services/worryResolutionService'
 
 interface PostCardProps {
   post: PostResponse
@@ -19,9 +22,50 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
   const { user: currentUser } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
   const [showFullContent, setShowFullContent] = useState(showExtended)
+  const [resolution, setResolution] = useState<WorryResolution | null>(null)
+  const [showResolutionModal, setShowResolutionModal] = useState(false)
+  const [isLoadingResolution, setIsLoadingResolution] = useState(false)
 
   const isOwner = currentUser?.id === post.userId
   const hasLongContent = post.longContent && post.longContent.length > 0
+
+  // Load resolution data when component mounts
+  useEffect(() => {
+    loadResolution()
+  }, [post.id])
+
+  const loadResolution = async () => {
+    try {
+      setIsLoadingResolution(true)
+      const resolutionData = await worryResolutionService.getResolution(post.id)
+      setResolution(resolutionData)
+    } catch (error) {
+      console.error('Failed to load resolution:', error)
+    } finally {
+      setIsLoadingResolution(false)
+    }
+  }
+
+  const handleResolutionCreated = () => {
+    loadResolution()
+  }
+
+  const handleMarkAsResolved = () => {
+    setShowResolutionModal(true)
+    setShowMenu(false)
+  }
+
+  const handleUnresolve = async () => {
+    if (window.confirm('Are you sure you want to mark this worry as unresolved?')) {
+      try {
+        await worryResolutionService.unresolveWorry(post.id)
+        setResolution(null)
+      } catch (error) {
+        console.error('Failed to unresolve worry:', error)
+      }
+    }
+    setShowMenu(false)
+  }
 
   const getPrivacyIcon = () => {
     switch (post.privacyLevel) {
@@ -167,6 +211,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
                     )}
                   </button>
                   <div className="border-t border-gray-100 my-1"></div>
+                  {resolution ? (
+                    <button
+                      onClick={handleUnresolve}
+                      className="flex items-center w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark as Unresolved
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleMarkAsResolved}
+                      className="flex items-center w-full px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark as Resolved
+                    </button>
+                  )}
+                  <div className="border-t border-gray-100 my-1"></div>
                   <button
                     onClick={handleDelete}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -253,8 +315,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
         </div>
       </div>
 
+      {/* Resolution Display */}
+      {resolution && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <ResolutionDisplay resolution={resolution} />
+        </div>
+      )}
+
       {/* Comments Section */}
       <CommentSection postId={post.id} />
+
+      {/* Resolution Modal */}
+      <ResolutionModal
+        isOpen={showResolutionModal}
+        onClose={() => setShowResolutionModal(false)}
+        postId={post.id}
+        postContent={`${post.worryPrompt} ${post.shortContent}`}
+        onResolutionCreated={handleResolutionCreated}
+      />
 
       {/* Click outside to close menu */}
       {showMenu && (

@@ -31,6 +31,7 @@ model User {
   subscriptions            Subscription[]
   worryResolutions         WorryResolution[]
   exerciseCompletions      UserExerciseCompletion[]
+  exerciseProgress         ExerciseProgress[]
   notifications            UserNotification[]
   notificationPreferences  NotificationPreferences?
   languagePreference       UserLanguagePreference?
@@ -339,4 +340,96 @@ model CommentReport {
 
   @@unique([commentId, reporterId]) // Prevent duplicate reports from same user
   @@map("comment_reports")
+}
+
+// Guided Exercises and Coping Techniques
+model Exercise {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  category    String
+  duration    Int      // in minutes
+  difficulty  String   // beginner, intermediate, advanced
+  steps       ExerciseStep[]
+  tags        String[]
+  imageUrl    String?
+  videoUrl    String?
+  audioUrl    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  progress    ExerciseProgress[]
+
+  @@map("exercises")
+}
+
+model ExerciseStep {
+  id          String   @id @default(uuid())
+  exerciseId  String   @map("exercise_id")
+  order       Int
+  title       String
+  content     String   @db.Text
+  duration    Int?     // in seconds
+  imageUrl    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@map("exercise_steps")
+}
+
+model CopingTechnique {
+  id                String     @id @default(uuid())
+  title             String
+  description       String
+  category          String
+  instructions      String     @db.Text
+  whenToUse         String[]
+  effectiveness     Int        // 1-5 scale
+  scienceBasedRating Int       @map("science_based_rating") // 1-5 scale
+  tags              String[]
+  imageUrl          String?
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  resources         Resource[]
+
+  @@map("coping_techniques")
+}
+
+model Resource {
+  id                String   @id @default(uuid())
+  copingTechniqueId String?  @map("coping_technique_id")
+  title             String
+  description       String
+  url               String
+  type              String   // article, video, audio, book, app, website
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  copingTechnique   CopingTechnique? @relation(fields: [copingTechniqueId], references: [id], onDelete: SetNull)
+
+  @@map("resources")
+}
+
+model ExerciseProgress {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  exerciseId  String    @map("exercise_id")
+  currentStep Int       @map("current_step")
+  completed   Boolean   @default(false)
+  startedAt   DateTime  @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  notes       String?
+  rating      Int?      // 1-5 scale
+  effectiveness Int?    // 1-5 scale
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@map("exercise_progress")
 }
