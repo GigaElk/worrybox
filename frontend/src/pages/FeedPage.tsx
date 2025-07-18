@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import PostForm from '../components/PostForm'
-import PostFeed from '../components/PostFeed'
+import ComprehensiveFeed, { ComprehensiveFeedRef } from '../components/ComprehensiveFeed'
 import BlogContentEditor from '../components/BlogContentEditor'
 import { PostResponse } from '../services/postService'
 import { Plus, X } from 'lucide-react'
@@ -10,12 +10,12 @@ const FeedPage: React.FC = () => {
   const { isAuthenticated } = useAuth()
   const [showPostForm, setShowPostForm] = useState(false)
   const [editingBlogPost, setEditingBlogPost] = useState<PostResponse | null>(null)
-  const [feedKey, setFeedKey] = useState(0) // Used to refresh the feed
+  const feedRef = useRef<ComprehensiveFeedRef>(null)
 
-  const handlePostCreated = (_post: PostResponse) => {
+  const handlePostCreated = (post: PostResponse) => {
     setShowPostForm(false)
-    // Refresh the feed by changing the key
-    setFeedKey(prev => prev + 1)
+    // Add the new post to the feed directly
+    feedRef.current?.addNewPost(post)
   }
 
   const handlePostEdit = (post: PostResponse) => {
@@ -30,7 +30,7 @@ const FeedPage: React.FC = () => {
   const handleBlogUpdate = (_updatedPost: PostResponse) => {
     setEditingBlogPost(null)
     // Refresh the feed to show updated content
-    setFeedKey(prev => prev + 1)
+    feedRef.current?.refresh()
   }
 
   const handleBlogCancel = () => {
@@ -44,7 +44,7 @@ const FeedPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Worrybox</h1>
@@ -119,9 +119,9 @@ const FeedPage: React.FC = () => {
           </div>
         )}
 
-        {/* Post Feed */}
-        <PostFeed
-          key={feedKey}
+        {/* Comprehensive Feed */}
+        <ComprehensiveFeed
+          ref={feedRef}
           onPostEdit={handlePostEdit}
           onPostDelete={handlePostDelete}
           onBlogEdit={handleBlogEdit}

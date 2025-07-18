@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { seedGuidedExercisesAndTechniques } from '../src/seeds/guidedExerciseSeeds'
+import { seedSupportedLanguages } from '../src/seeds/languageSeeds'
 
 const prisma = new PrismaClient()
 
@@ -29,6 +30,9 @@ async function main() {
 
   // Seed guided exercises and coping techniques
   await seedGuidedExercisesAndTechniques()
+
+  // Seed supported languages
+  await seedSupportedLanguages()
 
   console.log('🎉 Seed completed successfully!')
 }

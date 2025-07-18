@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { notificationService, Notification } from '../services/notificationService'
 import { useAuth } from '../contexts/AuthContext'
 import { Bell, Loader2 } from 'lucide-react'
-import NotificationList from './NotificationList'
+// import NotificationList from './NotificationList'
 
 const NotificationBell: React.FC = () => {
   const { user } = useAuth()

@@ -58,7 +58,12 @@ import subscriptionRoutes from './routes/subscriptions';
 import analyticsRoutes from './routes/analytics';
 import demographicAnalyticsRoutes from './routes/demographicAnalytics';
 import worryResolutionRoutes from './routes/worryResolution';
+// import guidedExercisesRoutes from './routes/guidedExercises';
+// import mentalHealthResourcesRoutes from './routes/mentalHealthResources';
+import notificationsRoutes from './routes/notifications';
+import languagesRoutes from './routes/languages';
 import { SchedulingService } from './services/schedulingService';
+import { NotificationScheduler } from './services/notificationScheduler';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -74,6 +79,10 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/demographics', demographicAnalyticsRoutes);
 app.use('/api/resolutions', worryResolutionRoutes);
+// app.use('/api/wellness', guidedExercisesRoutes);
+// app.use('/api/resources', mentalHealthResourcesRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/languages', languagesRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
@@ -108,4 +117,8 @@ app.listen(PORT, () => {
   // Start the post scheduler
   const scheduler = SchedulingService.getInstance();
   scheduler.startScheduler();
+  
+  // Start the notification scheduler
+  const notificationScheduler = NotificationScheduler.getInstance();
+  notificationScheduler.startScheduler();
 });

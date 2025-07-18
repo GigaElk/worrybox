@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { notificationService, NotificationPreferences } from '../services/notificationService'
 import { useAuth } from '../contexts/AuthContext'
-import { Bell, Clock, Mail, Smartphone, Volume2, VolumeX, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Bell, Clock, Mail, Smartphone, Volume2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 
 const NotificationPreferencesComponent: React.FC = () => {
   const { user } = useAuth()

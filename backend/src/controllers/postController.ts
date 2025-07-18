@@ -466,6 +466,94 @@ export class PostController {
     }
   }
 
+  async getPersonalizedFeed(req: Request, res: Response) {
+    try {
+      // Check validation results
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: errors.array(),
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const query: Omit<PostsQuery, 'userId'> = {
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+      };
+
+      const posts = await postService.getPersonalizedFeed(req.user.userId, query);
+
+      res.json({
+        data: posts,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: {
+          code: 'PERSONALIZED_FEED_FAILED',
+          message: 'Failed to fetch personalized feed',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  async getDiscoveryFeed(req: Request, res: Response) {
+    try {
+      // Check validation results
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: errors.array(),
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const query: Omit<PostsQuery, 'userId'> = {
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+      };
+
+      const requestingUserId = req.user?.userId;
+      const posts = await postService.getDiscoveryFeed(requestingUserId, query);
+
+      res.json({
+        data: posts,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: {
+          code: 'DISCOVERY_FEED_FAILED',
+          message: 'Failed to fetch discovery feed',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
   async getWorryPrompts(req: Request, res: Response) {
     try {
       const prompts = await postService.getWorryPrompts();

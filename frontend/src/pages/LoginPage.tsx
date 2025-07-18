@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Heart } from 'lucide-react'
+// import { Heart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 interface LoginForm {
   email: string
@@ -38,7 +39,11 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Heart className="h-12 w-12 text-primary-600" />
+          <img 
+            src={WorryBoxLogoSquare} 
+            alt="Worrybox" 
+            className="h-16 w-auto"
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Welcome back to Worrybox

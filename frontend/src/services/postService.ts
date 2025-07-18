@@ -115,6 +115,26 @@ export const postService = {
     return response.data.data
   },
 
+  // Get personalized feed (posts from followed users)
+  async getPersonalizedFeed(query: Omit<PostsQuery, 'userId'> = {}): Promise<PostsResponse> {
+    const params = new URLSearchParams()
+    if (query.limit) params.append('limit', query.limit.toString())
+    if (query.offset) params.append('offset', query.offset.toString())
+
+    const response = await api.get(`/posts/feed/personalized?${params.toString()}`)
+    return response.data.data
+  },
+
+  // Get discovery feed (posts from users not followed)
+  async getDiscoveryFeed(query: Omit<PostsQuery, 'userId'> = {}): Promise<PostsResponse> {
+    const params = new URLSearchParams()
+    if (query.limit) params.append('limit', query.limit.toString())
+    if (query.offset) params.append('offset', query.offset.toString())
+
+    const response = await api.get(`/posts/feed/discovery?${params.toString()}`)
+    return response.data.data
+  },
+
   // Get available worry prompts
   async getWorryPrompts(): Promise<string[]> {
     const response = await api.get('/posts/prompts')

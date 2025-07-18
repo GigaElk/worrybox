@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Heart, CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from 'lucide-react'
 import { authService } from '../services/authService'
 import { useAuth } from '../contexts/AuthContext'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 const VerifyEmailPage = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -41,7 +42,11 @@ const VerifyEmailPage = () => {
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center">
-            <Heart className="h-12 w-12 text-primary-600" />
+            <img 
+              src={WorryBoxLogoSquare} 
+              alt="Worrybox" 
+              className="h-16 w-auto"
+            />
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             Verifying your email...
@@ -58,7 +63,11 @@ const VerifyEmailPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Heart className="h-12 w-12 text-primary-600" />
+          <img 
+            src={WorryBoxLogoSquare} 
+            alt="Worrybox" 
+            className="h-16 w-auto"
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Email Verification

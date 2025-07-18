@@ -176,7 +176,7 @@ export class PostService {
     }
 
     // Check privacy permissions
-    if (!this.canViewPost(post, requestingUserId)) {
+    if (!(await this.canViewPost(post, requestingUserId))) {
       return null;
     }
 
@@ -233,10 +233,130 @@ export class PostService {
     ]);
 
     // Filter posts based on privacy permissions
-    const visiblePosts = posts.filter(post => this.canViewPost(post, requestingUserId));
+    const visiblePosts = await Promise.all(
+      posts.map(async (post) => {
+        const canView = await this.canViewPost(post, requestingUserId);
+        return canView ? post : null;
+      })
+    );
+    const filteredPosts = visiblePosts.filter(post => post !== null);
 
     return {
-      posts: visiblePosts.map(post => this.formatPostResponse(post)),
+      posts: filteredPosts.map(post => this.formatPostResponse(post)),
+      total,
+      hasMore: offset + posts.length < total,
+    };
+  }
+
+  async getPersonalizedFeed(userId: string, query: Omit<PostsQuery, 'userId'> = {}): Promise<PostsResponse> {
+    const limit = Math.min(query.limit || 20, 50);
+    const offset = query.offset || 0;
+
+    // Get users that the current user is following
+    const following = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true }
+    });
+
+    const followingIds = following.map(f => f.followingId);
+    
+    // Include the user's own posts and posts from people they follow
+    const userIds = [userId, ...followingIds];
+
+    const whereClause: any = {
+      publishedAt: { not: null },
+      userId: { in: userIds },
+      OR: [
+        // User's own posts (all privacy levels)
+        { userId: userId },
+        // Public posts from followed users
+        { userId: { in: followingIds }, privacyLevel: 'public' },
+        // Friends posts from followed users (mutual follows)
+        { userId: { in: followingIds }, privacyLevel: 'friends' }
+      ]
+    };
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy: [
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: limit,
+        skip: offset,
+      }),
+      prisma.post.count({
+        where: whereClause,
+      }),
+    ]);
+
+    return {
+      posts: posts.map(post => this.formatPostResponse(post)),
+      total,
+      hasMore: offset + posts.length < total,
+    };
+  }
+
+  async getDiscoveryFeed(userId?: string, query: Omit<PostsQuery, 'userId'> = {}): Promise<PostsResponse> {
+    const limit = Math.min(query.limit || 20, 50);
+    const offset = query.offset || 0;
+
+    let excludeUserIds: string[] = [];
+    
+    if (userId) {
+      // Get users that the current user is already following to exclude from discovery
+      const following = await prisma.follow.findMany({
+        where: { followerId: userId },
+        select: { followingId: true }
+      });
+      
+      excludeUserIds = [userId, ...following.map(f => f.followingId)];
+    }
+
+    const whereClause: any = {
+      publishedAt: { not: null },
+      privacyLevel: 'public', // Only public posts for discovery
+      ...(excludeUserIds.length > 0 && { userId: { notIn: excludeUserIds } })
+    };
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy: [
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: limit,
+        skip: offset,
+      }),
+      prisma.post.count({
+        where: whereClause,
+      }),
+    ]);
+
+    return {
+      posts: posts.map(post => this.formatPostResponse(post)),
       total,
       hasMore: offset + posts.length < total,
     };
@@ -246,7 +366,7 @@ export class PostService {
     return this.getPosts({ ...query, userId }, requestingUserId);
   }
 
-  private canViewPost(post: any, requestingUserId?: string): boolean {
+  private async canViewPost(post: any, requestingUserId?: string): Promise<boolean> {
     // User can always see their own posts
     if (requestingUserId && post.userId === requestingUserId) {
       return true;
@@ -262,9 +382,29 @@ export class PostService {
       return false;
     }
 
-    // Friends posts - for now, treat as public (will be enhanced with follow system)
+    // Friends posts - check if users are following each other (mutual follow = friends)
     if (post.privacyLevel === 'friends') {
-      return true; // TODO: Check if users are friends when follow system is implemented
+      if (!requestingUserId) {
+        return false;
+      }
+
+      // Check if requesting user follows the post author AND post author follows back
+      const [userFollowsAuthor, authorFollowsUser] = await Promise.all([
+        prisma.follow.findFirst({
+          where: {
+            followerId: requestingUserId,
+            followingId: post.userId
+          }
+        }),
+        prisma.follow.findFirst({
+          where: {
+            followerId: post.userId,
+            followingId: requestingUserId
+          }
+        })
+      ]);
+
+      return !!(userFollowsAuthor && authorFollowsUser);
     }
 
     return false;

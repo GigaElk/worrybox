@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { notificationService, Notification } from '../services/notificationService'
 import { useAuth } from '../contexts/AuthContext'
-import { Bell, Heart, MessageCircle, CheckCircle, Clock, Loader2, AlertCircle, MarkAsRead } from 'lucide-react'
+import { Bell, Heart, MessageCircle, CheckCircle, Clock, Loader2, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface NotificationListProps {

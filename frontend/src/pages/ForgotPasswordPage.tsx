@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Heart, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authService } from '../services/authService'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 interface ForgotPasswordForm {
   email: string
@@ -37,7 +38,11 @@ const ForgotPasswordPage = () => {
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center">
-            <Heart className="h-12 w-12 text-primary-600" />
+            <img 
+              src={WorryBoxLogoSquare} 
+              alt="Worrybox" 
+              className="h-16 w-auto"
+            />
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             Check your email
@@ -71,7 +76,11 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Heart className="h-12 w-12 text-primary-600" />
+          <img 
+            src={WorryBoxLogoSquare} 
+            alt="Worrybox" 
+            className="h-16 w-auto"
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Forgot your password?
