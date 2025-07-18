@@ -21,6 +21,8 @@ import CopingTechniquesPage from './pages/CopingTechniquesPage'
 import ExerciseDetail from './components/ExerciseDetail'
 import CopingTechniqueDetail from './components/CopingTechniqueDetail'
 import ResolutionStoriesPage from './pages/ResolutionStoriesPage'
+import ResourcesPage from './pages/ResourcesPage'
+import NotificationsPage from './pages/NotificationsPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 
@@ -62,6 +64,8 @@ function App() {
               <Route path="wellness/techniques" element={<CopingTechniquesPage />} />
               <Route path="wellness/techniques/:id" element={<CopingTechniqueDetail />} />
               <Route path="resolution-stories" element={<ResolutionStoriesPage />} />
+              <Route path="resources" element={<ResourcesPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

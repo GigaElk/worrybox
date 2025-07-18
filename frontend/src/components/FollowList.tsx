@@ -37,7 +37,9 @@ const FollowList: React.FC<FollowListProps> = ({ userId, type, className = '' })
         ? await followService.getFollowers(userId, limit, currentOffset)
         : await followService.getFollowing(userId, limit, currentOffset)
 
-      const newFollows = type === 'followers' ? response.followers : response.following
+      const newFollows = type === 'followers' 
+        ? (response as { followers: FollowResponse[], hasMore: boolean }).followers 
+        : (response as { following: FollowResponse[], hasMore: boolean }).following
 
       if (reset) {
         setFollows(newFollows)
