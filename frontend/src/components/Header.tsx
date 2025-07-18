@@ -1,9 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Heart, User, LogOut } from 'lucide-react'
+import { User, LogOut } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationBell from './NotificationBell'
+import LanguageSelector from './LanguageSelector'
+import WorryBoxLogoLong from '../assets/WorryBoxLogoLong.png'
 
 const Header = () => {
+  const { t } = useTranslation()
   const { user, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -17,9 +21,12 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <Heart className="h-8 w-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">Worrybox</span>
+          <Link to="/" className="flex items-center">
+            <img 
+              src={WorryBoxLogoLong} 
+              alt="Worrybox" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Navigation */}
@@ -28,26 +35,27 @@ const Header = () => {
               to="/" 
               className="text-gray-600 hover:text-gray-900 transition-colors"
             >
-              Home
+              {t('navigation.home')}
             </Link>
             <Link 
               to="/feed" 
               className="text-gray-600 hover:text-gray-900 transition-colors"
             >
-              Feed
+              {t('navigation.feed')}
             </Link>
             {isAuthenticated && (
               <Link 
                 to="/dashboard" 
                 className="text-gray-600 hover:text-gray-900 transition-colors"
               >
-                Dashboard
+                {t('navigation.dashboard')}
               </Link>
             )}
           </nav>
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            <LanguageSelector compact={true} showLabel={false} />
             {isAuthenticated ? (
               <div className="flex items-center space-x-3">
                 <NotificationBell />
@@ -62,7 +70,7 @@ const Header = () => {
                   className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="text-sm">Logout</span>
+                  <span className="text-sm">{t('navigation.logout')}</span>
                 </button>
               </div>
             ) : (
@@ -71,13 +79,13 @@ const Header = () => {
                   to="/login" 
                   className="text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  Login
+                  {t('navigation.login')}
                 </Link>
                 <Link 
                   to="/register" 
                   className="btn-primary"
                 >
-                  Sign Up
+                  {t('navigation.register')}
                 </Link>
               </div>
             )}

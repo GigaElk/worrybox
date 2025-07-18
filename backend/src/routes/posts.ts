@@ -10,6 +10,8 @@ router.get('/prompts', postController.getWorryPrompts);
 
 // Semi-protected routes (optional authentication)
 router.get('/', optionalAuth, getPostsValidation, postController.getPosts);
+router.get('/feed/personalized', authenticateToken, getPostsValidation, postController.getPersonalizedFeed);
+router.get('/feed/discovery', optionalAuth, getPostsValidation, postController.getDiscoveryFeed);
 router.get('/:postId', optionalAuth, postController.getPost);
 router.get('/user/:userId', optionalAuth, getPostsValidation, postController.getUserPosts);
 

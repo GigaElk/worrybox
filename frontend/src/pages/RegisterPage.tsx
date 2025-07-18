@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Heart, Eye, EyeOff, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/authService'
 import { useDebounce } from '../hooks/useDebounce'
 import toast from 'react-hot-toast'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 const registerSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -154,7 +155,11 @@ const RegisterPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Heart className="h-12 w-12 text-primary-600" />
+          <img 
+            src={WorryBoxLogoSquare} 
+            alt="Worrybox" 
+            className="h-16 w-auto"
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Create your account

@@ -32,7 +32,7 @@ model User {
   worryResolutions         WorryResolution[]
   exerciseCompletions      UserExerciseCompletion[]
   exerciseProgress         ExerciseProgress[]
-  notifications            UserNotification[]
+  notifications            Notification[]
   notificationPreferences  NotificationPreferences?
   languagePreference       UserLanguagePreference?
   commentReports           CommentReport[] @relation("CommentReports")
@@ -235,33 +235,37 @@ model MentalHealthResource {
   @@map("mental_health_resources")
 }
 
-model UserNotification {
+model Notification {
   id           String    @id @default(uuid())
   userId       String    @map("user_id")
-  type         String
+  type         String    // check_in, support, encouragement, community, reminder
   title        String
   message      String
   isRead       Boolean   @default(false) @map("is_read")
-  scheduledFor DateTime? @map("scheduled_for")
   sentAt       DateTime? @map("sent_at")
+  scheduledFor DateTime? @map("scheduled_for")
+  metadata     Json      @default("{}")
   createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("user_notifications")
+  @@map("notifications")
 }
 
 model NotificationPreferences {
-  id                     String   @id @default(uuid())
-  userId                 String   @unique @map("user_id")
-  checkInFrequency       String   @default("weekly") @map("check_in_frequency") // 'daily', 'weekly', 'monthly', 'never'
-  supportiveMessages     Boolean  @default(true) @map("supportive_messages")
-  communityInteractions  Boolean  @default(true) @map("community_interactions")
-  quietHoursStart        String   @default("22:00") @map("quiet_hours_start")
-  quietHoursEnd          String   @default("08:00") @map("quiet_hours_end")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  id                   String  @id @default(uuid())
+  userId               String  @unique @map("user_id")
+  emailNotifications   Boolean @default(true) @map("email_notifications")
+  pushNotifications    Boolean @default(true) @map("push_notifications")
+  checkInFrequency     String  @default("weekly") @map("check_in_frequency") // daily, weekly, biweekly, monthly, never
+  supportNotifications Boolean @default(true) @map("support_notifications")
+  quietHoursStart      String? @map("quiet_hours_start") // HH:MM format
+  quietHoursEnd        String? @map("quiet_hours_end")   // HH:MM format
+  timezone             String  @default("UTC")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Heart, Shield, Users, Zap } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 const HomePage = () => {
   const { isAuthenticated } = useAuth()
@@ -56,6 +57,13 @@ const HomePage = () => {
     <div className="space-y-16">
       {/* Hero Section */}
       <div className="text-center">
+        <div className="flex justify-center mb-8">
+          <img 
+            src={WorryBoxLogoSquare} 
+            alt="Worrybox" 
+            className="h-32 w-auto"
+          />
+        </div>
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
           A safe space for your <span className="text-primary-600">worries</span>
         </h1>

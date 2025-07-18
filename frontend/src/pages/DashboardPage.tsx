@@ -1,11 +1,12 @@
 import { BarChart3, Heart, Users, TrendingUp } from 'lucide-react'
-import CrisisResourceBanner from '../components/CrisisResourceBanner'
+// import CrisisResourceBanner from '../components/CrisisResourceBanner'
+import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 const DashboardPage = () => {
   return (
     <div className="space-y-8">
       {/* Crisis Resources Banner */}
-      <CrisisResourceBanner />
+      {/* <CrisisResourceBanner /> */}
 
       {/* Header */}
       <div>
@@ -71,7 +72,11 @@ const DashboardPage = () => {
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Worries</h2>
           <div className="text-center py-8 text-gray-500">
-            <Heart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <img 
+              src={WorryBoxLogoSquare} 
+              alt="Worrybox" 
+              className="h-16 w-auto mx-auto mb-4 opacity-30"
+            />
             <p>No worries shared yet</p>
             <p className="text-sm mt-2">Start by sharing what's on your mind</p>
           </div>
