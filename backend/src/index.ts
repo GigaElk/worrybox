@@ -62,6 +62,7 @@ import worryResolutionRoutes from './routes/worryResolution';
 // import mentalHealthResourcesRoutes from './routes/mentalHealthResources';
 import notificationsRoutes from './routes/notifications';
 import languagesRoutes from './routes/languages';
+import dashboardRoutes from './routes/dashboard';
 import { SchedulingService } from './services/schedulingService';
 import { NotificationScheduler } from './services/notificationScheduler';
 
@@ -83,6 +84,7 @@ app.use('/api/resolutions', worryResolutionRoutes);
 // app.use('/api/resources', mentalHealthResourcesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/languages', languagesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
