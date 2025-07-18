@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Heart, User, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import NotificationBell from './NotificationBell'
 
 const Header = () => {
   const { user, isAuthenticated, logout } = useAuth()
@@ -49,6 +50,7 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="flex items-center space-x-3">
+                <NotificationBell />
                 <div className="flex items-center space-x-2">
                   <User className="h-5 w-5 text-gray-400" />
                   <span className="text-sm text-gray-700">

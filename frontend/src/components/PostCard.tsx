@@ -24,7 +24,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
   const [showFullContent, setShowFullContent] = useState(showExtended)
   const [resolution, setResolution] = useState<WorryResolution | null>(null)
   const [showResolutionModal, setShowResolutionModal] = useState(false)
-  const [isLoadingResolution, setIsLoadingResolution] = useState(false)
+  const [, setIsLoadingResolution] = useState(false)
 
   const isOwner = currentUser?.id === post.userId
   const hasLongContent = post.longContent && post.longContent.length > 0

@@ -5,6 +5,7 @@ import { Heart, Brain, Loader2, AlertCircle, TrendingUp, Calendar, Star } from '
 import { Link } from 'react-router-dom'
 import ExerciseList from '../components/ExerciseList'
 import CopingTechniqueList from '../components/CopingTechniqueList'
+import RecommendedResources from '../components/RecommendedResources'
 import FeatureGate from '../components/FeatureGate'
 
 const WellnessDashboard: React.FC = () => {
@@ -201,6 +202,20 @@ const WellnessDashboard: React.FC = () => {
             </Link>
           </div>
           <CopingTechniqueList limit={6} showViewAll={false} />
+        </div>
+
+        {/* Recommended Mental Health Resources */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">Mental Health Resources</h2>
+            <Link 
+              to="/resources" 
+              className="text-pink-600 hover:text-pink-800 text-sm font-medium"
+            >
+              View All Resources
+            </Link>
+          </div>
+          <RecommendedResources limit={3} />
         </div>
 
         {/* Quick Actions */}

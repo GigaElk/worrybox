@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { guidedExerciseService, Exercise, ExerciseProgress } from '../services/guidedExerciseService'
 import { useAuth } from '../contexts/AuthContext'
-import { Clock, BarChart, Loader2, AlertCircle, Play, Pause, SkipForward, CheckCircle, Star, ArrowLeft } from 'lucide-react'
+import { Clock, BarChart, Loader2, AlertCircle, Play, SkipForward, CheckCircle, Star, ArrowLeft } from 'lucide-react'
 import FeatureGate from './FeatureGate'
 
 const ExerciseDetail: React.FC = () => {
@@ -100,8 +100,8 @@ const ExerciseDetail: React.FC = () => {
     await updateProgress({ 
       completed: true,
       notes,
-      rating,
-      effectiveness
+      rating: rating || undefined,
+      effectiveness: effectiveness || undefined
     })
   }
 
@@ -398,7 +398,7 @@ const ExerciseDetail: React.FC = () => {
                 </div>
                 
                 <button
-                  onClick={() => updateProgress({ notes, rating, effectiveness })}
+                  onClick={() => updateProgress({ notes, rating: rating || undefined, effectiveness: effectiveness || undefined })}
                   disabled={isUpdating}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >

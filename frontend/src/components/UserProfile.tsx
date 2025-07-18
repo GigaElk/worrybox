@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { User, Mail, Calendar, MapPin, Link as LinkIcon } from 'lucide-react'
+import React, { useState } from 'react'
+import { User, Calendar, MapPin, Link as LinkIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import FollowButton from './FollowButton'
 import FollowStats from './FollowStats'
@@ -24,7 +24,7 @@ interface UserProfileProps {
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, className = '', onFollowStatsClick }) => {
   const { user: currentUser } = useAuth()
-  const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0 })
+  const [, setFollowStats] = useState({ followersCount: 0, followingCount: 0 })
 
   const isOwnProfile = currentUser?.id === user.id
 

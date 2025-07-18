@@ -7,7 +7,6 @@ import {
   TrendingDown, 
   Users, 
   Globe, 
-  Clock, 
   Shield,
   Activity,
   Heart,
@@ -52,14 +51,14 @@ const DemographicAnalyticsDashboard: React.FC<DemographicAnalyticsDashboardProps
     }
   }
 
-  const getTimeRangeLabel = (range: string) => {
-    switch (range) {
-      case '30d': return 'Last 30 Days'
-      case '90d': return 'Last 3 Months'
-      case '1y': return 'Last Year'
-      default: return 'Last 3 Months'
-    }
-  }
+  // const getTimeRangeLabel = (range: string) => {
+  //   switch (range) {
+  //     case '30d': return 'Last 30 Days'
+  //     case '90d': return 'Last 3 Months'
+  //     case '1y': return 'Last Year'
+  //     default: return 'Last 3 Months'
+  //   }
+  // }
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-600" />

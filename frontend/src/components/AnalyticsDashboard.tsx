@@ -50,14 +50,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     }
   }
 
-  const getTimeRangeLabel = (range: string) => {
-    switch (range) {
-      case '30d': return 'Last 30 Days'
-      case '90d': return 'Last 3 Months'
-      case '1y': return 'Last Year'
-      default: return 'Last 30 Days'
-    }
-  }
+  // const getTimeRangeLabel = (range: string) => {
+  //   switch (range) {
+  //     case '30d': return 'Last 30 Days'
+  //     case '90d': return 'Last 3 Months'
+  //     case '1y': return 'Last Year'
+  //     default: return 'Last 30 Days'
+  //   }
+  // }
 
   const getSentimentColor = (score: number) => {
     if (score <= -0.5) return 'text-red-600'
@@ -75,7 +75,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     return 'Very Positive'
   }
 
-  const getInsightIcon = (type: string, severity: string) => {
+  const getInsightIcon = (_type: string, severity: string) => {
     if (severity === 'positive') return <CheckCircle className="w-5 h-5 text-green-600" />
     if (severity === 'warning') return <AlertCircle className="w-5 h-5 text-orange-600" />
     return <Info className="w-5 h-5 text-blue-600" />
