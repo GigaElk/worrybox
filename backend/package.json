@@ -26,6 +26,7 @@
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@prisma/client": "^6.12.0",
+    "@types/morgan": "^1.9.10",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
@@ -34,10 +35,12 @@
     "express-validator": "^7.0.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7",
     "openai": "^5.10.1",
-    "stripe": "^14.7.0"
+    "stripe": "^14.7.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

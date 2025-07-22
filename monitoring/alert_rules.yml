@@ -1,0 +1,102 @@
+groups:
+  - name: worrybox_alerts
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is running low"
+          description: "Disk space is below 10% on {{ $labels.instance }}"
+
+      # Application Down
+      - alert: ApplicationDown
+        expr: up{job="worrybox-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WorryBox application is down"
+          description: "The WorryBox backend application has been down for more than 1 minute"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionHigh
+        expr: rate(postgres_stat_database_numbackends[5m]) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of database connections"
+          description: "Database connection count is high: {{ $value }}"
+
+      # High HTTP Error Rate
+      - alert: HighHTTPErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is above 5% for more than 5 minutes"
+
+      # Response Time High
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is above 2 seconds"
+
+      # Redis Down
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute"
+
+      # PostgreSQL Down
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been down for more than 1 minute"
+
+      # SSL Certificate Expiry
+      - alert: SSLCertificateExpiry
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate will expire in less than 7 days"

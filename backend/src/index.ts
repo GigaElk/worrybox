@@ -2,10 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import logger, { morganStream } from './services/logger';
+import { HealthCheckService } from './services/healthCheck';
 
 // Load environment variables
 dotenv.config();
+
+// Ensure logs directory exists
+const logsDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,17 +42,38 @@ if (process.env.NODE_ENV === 'production') {
   console.log('🔓 Rate limiting disabled in development mode');
 }
 
+// HTTP request logging
+app.use(morgan('combined', { stream: morganStream }));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Worrybox API is running',
-    timestamp: new Date().toISOString()
-  });
+// Health check endpoints
+const healthCheckService = HealthCheckService.getInstance();
+
+// Detailed health check for monitoring
+app.get('/api/health', async (req, res) => {
+  try {
+    const healthStatus = await healthCheckService.performHealthCheck();
+    const statusCode = healthStatus.status === 'healthy' ? 200 : 
+                      healthStatus.status === 'degraded' ? 200 : 503;
+    
+    res.status(statusCode).json(healthStatus);
+  } catch (error) {
+    logger.error('Health check endpoint error', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      message: 'Health check failed',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Simple health check for Docker/load balancer
+app.get('/health', async (req, res) => {
+  const isHealthy = await healthCheckService.isHealthy();
+  res.status(isHealthy ? 200 : 503).send(isHealthy ? 'OK' : 'UNHEALTHY');
 });
 
 // Import routes
@@ -98,7 +130,14 @@ app.use('/api', (req, res) => {
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
   
   res.status(err.status || 500).json({
     error: {
@@ -112,15 +151,40 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Worrybox API server running on port ${PORT}`);
-  console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🚀 Worrybox API server running on port ${PORT}`);
+  logger.info(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   // Start the post scheduler
   const scheduler = SchedulingService.getInstance();
   scheduler.startScheduler();
+  logger.info('📅 Post scheduler started');
   
   // Start the notification scheduler
   const notificationScheduler = NotificationScheduler.getInstance();
   notificationScheduler.startScheduler();
+  logger.info('🔔 Notification scheduler started');
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', error);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
