@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import PostForm from '../components/PostForm'
+import PostEditForm from '../components/PostEditForm'
 import ComprehensiveFeed, { ComprehensiveFeedRef } from '../components/ComprehensiveFeed'
 import BlogContentEditor from '../components/BlogContentEditor'
 import { PostResponse } from '../services/postService'
@@ -9,6 +10,7 @@ import { Plus, X } from 'lucide-react'
 const FeedPage: React.FC = () => {
   const { isAuthenticated } = useAuth()
   const [showPostForm, setShowPostForm] = useState(false)
+  const [editingPost, setEditingPost] = useState<PostResponse | null>(null)
   const [editingBlogPost, setEditingBlogPost] = useState<PostResponse | null>(null)
   const feedRef = useRef<ComprehensiveFeedRef>(null)
 
@@ -19,8 +21,17 @@ const FeedPage: React.FC = () => {
   }
 
   const handlePostEdit = (post: PostResponse) => {
-    // TODO: Implement edit functionality in a future task
-    console.log('Edit post:', post)
+    setEditingPost(post)
+  }
+
+  const handlePostUpdate = (updatedPost: PostResponse) => {
+    setEditingPost(null)
+    // Refresh the feed to show updated content
+    feedRef.current?.refresh()
+  }
+
+  const handlePostEditCancel = () => {
+    setEditingPost(null)
   }
 
   const handleBlogEdit = (post: PostResponse) => {
@@ -105,6 +116,17 @@ const FeedPage: React.FC = () => {
                 Log In
               </a>
             </div>
+          </div>
+        )}
+
+        {/* Post Edit Form */}
+        {editingPost && (
+          <div className="mb-8">
+            <PostEditForm
+              post={editingPost}
+              onPostUpdated={handlePostUpdate}
+              onCancel={handlePostEditCancel}
+            />
           </div>
         )}
 

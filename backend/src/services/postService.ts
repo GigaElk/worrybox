@@ -11,6 +11,7 @@ export class PostService {
       longContent: data.longContent || null,
       worryPrompt: data.worryPrompt,
       privacyLevel: data.privacyLevel,
+      commentsEnabled: data.commentsEnabled !== undefined ? data.commentsEnabled : true,
       isScheduled: data.isScheduled || false,
       scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
       publishedAt: (!data.isScheduled || !data.scheduledFor) ? new Date() : null,
@@ -53,6 +54,7 @@ export class PostService {
         longContent: data.longContent,
         privacyLevel: data.privacyLevel,
         worryPrompt: data.worryPrompt,
+        commentsEnabled: data.commentsEnabled,
         updatedAt: new Date(),
       },
       include: {
@@ -457,6 +459,7 @@ export class PostService {
       longContent: post.longContent || undefined,
       worryPrompt: post.worryPrompt,
       privacyLevel: post.privacyLevel,
+      commentsEnabled: post.commentsEnabled,
       isScheduled: post.isScheduled,
       scheduledFor: post.scheduledFor?.toISOString(),
       publishedAt: post.publishedAt?.toISOString(),

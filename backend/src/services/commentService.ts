@@ -40,13 +40,18 @@ export interface ReportCommentRequest {
 
 export class CommentService {
   async createComment(userId: string, postId: string, data: CreateCommentRequest): Promise<CommentResponse> {
-    // Check if post exists
+    // Check if post exists and if comments are enabled
     const post = await prisma.post.findUnique({
-      where: { id: postId }
+      where: { id: postId },
+      select: { id: true, commentsEnabled: true }
     });
 
     if (!post) {
       throw new Error('Post not found');
+    }
+
+    if (!post.commentsEnabled) {
+      throw new Error('Comments are disabled for this post');
     }
 
     // Validate parent comment if provided

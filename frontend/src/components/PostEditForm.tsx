@@ -2,61 +2,55 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { postService, CreatePostRequest, PostResponse } from '../services/postService'
-import { Globe, Users, Lock, Calendar } from 'lucide-react'
+import { postService, UpdatePostRequest, PostResponse } from '../services/postService'
+import { Globe, Users, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const postSchema = z.object({
+const updatePostSchema = z.object({
   shortContent: z.string().min(1, 'Please share your worry').max(280, 'Worry must be less than 280 characters'),
   worryPrompt: z.string().min(1, 'Please select a prompt'),
   privacyLevel: z.enum(['public', 'friends', 'private']),
-  commentsEnabled: z.boolean().optional(),
+  commentsEnabled: z.boolean(),
   longContent: z.string().max(10000, 'Extended content must be less than 10,000 characters').optional().or(z.literal('')),
-  isScheduled: z.boolean().optional(),
-  scheduledFor: z.string().optional(),
 })
 
-type PostFormData = z.infer<typeof postSchema>
+type PostEditFormData = z.infer<typeof updatePostSchema>
 
-interface PostFormProps {
-  onPostCreated: (post: PostResponse) => void
-  onCancel?: () => void
+interface PostEditFormProps {
+  post: PostResponse
+  onPostUpdated: (post: PostResponse) => void
+  onCancel: () => void
 }
 
-const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
+const PostEditForm: React.FC<PostEditFormProps> = ({ post, onPostUpdated, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [worryPrompts, setWorryPrompts] = useState<string[]>([])
-  const [showExtended, setShowExtended] = useState(false)
-  const [showScheduling, setShowScheduling] = useState(false)
+  const [showExtended, setShowExtended] = useState(!!post.longContent)
 
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
     watch,
-    reset,
-    setValue,
-  } = useForm<PostFormData>({
-    resolver: zodResolver(postSchema),
+  } = useForm<PostEditFormData>({
+    resolver: zodResolver(updatePostSchema),
     defaultValues: {
-      privacyLevel: 'public',
-      commentsEnabled: true,
-      isScheduled: false,
+      shortContent: post.shortContent,
+      worryPrompt: post.worryPrompt,
+      privacyLevel: post.privacyLevel as 'public' | 'friends' | 'private',
+      commentsEnabled: post.commentsEnabled,
+      longContent: post.longContent || '',
     },
     mode: 'onChange',
   })
 
   const shortContent = watch('shortContent')
-  const isScheduled = watch('isScheduled')
 
   useEffect(() => {
     const fetchPrompts = async () => {
       try {
         const prompts = await postService.getWorryPrompts()
         setWorryPrompts(prompts)
-        if (prompts.length > 0) {
-          setValue('worryPrompt', prompts[0])
-        }
       } catch (error) {
         console.error('Failed to fetch worry prompts:', error)
         toast.error('Failed to load worry prompts')
@@ -64,40 +58,28 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
     }
 
     fetchPrompts()
-  }, [setValue])
+  }, [])
 
-  const onSubmit = async (data: PostFormData) => {
+  const onSubmit = async (data: PostEditFormData) => {
     setIsSubmitting(true)
     try {
-      const postData: CreatePostRequest = {
+      const updateData: UpdatePostRequest = {
         shortContent: data.shortContent,
         worryPrompt: data.worryPrompt,
         privacyLevel: data.privacyLevel,
         commentsEnabled: data.commentsEnabled,
         longContent: data.longContent || undefined,
-        isScheduled: data.isScheduled,
-        scheduledFor: data.scheduledFor || undefined,
       }
 
-      const post = await postService.createPost(postData)
-      onPostCreated(post)
-      reset()
-      setShowExtended(false)
-      setShowScheduling(false)
-      toast.success('Your worry has been shared!')
+      const updatedPost = await postService.updatePost(post.id, updateData)
+      onPostUpdated(updatedPost)
+      toast.success('Your post has been updated!')
     } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Failed to create post'
+      const message = error.response?.data?.error?.message || 'Failed to update post'
       toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const handleCancel = () => {
-    reset()
-    setShowExtended(false)
-    setShowScheduling(false)
-    onCancel?.()
   }
 
   const privacyOptions = [
@@ -108,6 +90,10 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Edit Post</h3>
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Worry Prompt Selection */}
         <div>
@@ -159,7 +145,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
             onClick={() => setShowExtended(!showExtended)}
             className="text-sm text-primary-600 hover:text-primary-700"
           >
-            {showExtended ? 'Hide' : 'Add'} extended thoughts
+            {showExtended ? 'Hide' : 'Show'} extended thoughts
           </button>
         </div>
 
@@ -230,70 +216,21 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
           </p>
         </div>
 
-        {/* Scheduling Toggle */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowScheduling(!showScheduling)}
-            className="flex items-center text-sm text-primary-600 hover:text-primary-700"
-          >
-            <Calendar className="w-4 h-4 mr-1" />
-            {showScheduling ? 'Cancel scheduling' : 'Schedule for later'}
-          </button>
-        </div>
-
-        {/* Scheduling Options */}
-        {showScheduling && (
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <input
-                {...register('isScheduled')}
-                type="checkbox"
-                id="isScheduled"
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isScheduled" className="ml-2 block text-sm text-gray-900">
-                Schedule this post
-              </label>
-            </div>
-
-            {isScheduled && (
-              <div>
-                <label htmlFor="scheduledFor" className="block text-sm font-medium text-gray-700 mb-1">
-                  Schedule for
-                </label>
-                <input
-                  {...register('scheduledFor')}
-                  type="datetime-local"
-                  id="scheduledFor"
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                />
-                {errors.scheduledFor && (
-                  <p className="mt-1 text-sm text-red-600">{errors.scheduledFor.message}</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Form Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          {onCancel && (
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             disabled={isSubmitting || !isValid}
             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Sharing...' : isScheduled ? 'Schedule Post' : 'Share Worry'}
+            {isSubmitting ? 'Updating...' : 'Update Post'}
           </button>
         </div>
       </form>
@@ -301,4 +238,4 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated, onCancel }) => {
   )
 }
 
-export default PostForm
+export default PostEditForm

@@ -16,6 +16,10 @@ export const createPostValidation = [
   body('privacyLevel')
     .isIn(['public', 'friends', 'private'])
     .withMessage('Privacy level must be public, friends, or private'),
+  body('commentsEnabled')
+    .optional()
+    .isBoolean()
+    .withMessage('commentsEnabled must be a boolean'),
   body('longContent')
     .optional()
     .isLength({ max: 10000 })
@@ -43,6 +47,10 @@ export const updatePostValidation = [
     .optional()
     .isIn(['public', 'friends', 'private'])
     .withMessage('Privacy level must be public, friends, or private'),
+  body('commentsEnabled')
+    .optional()
+    .isBoolean()
+    .withMessage('commentsEnabled must be a boolean'),
   body('longContent')
     .optional()
     .isLength({ max: 10000 })

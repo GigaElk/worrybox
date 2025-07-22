@@ -85,6 +85,23 @@ describe('CommentService', () => {
         content: 'Test comment'
       })).rejects.toThrow('Post not found')
     })
+
+    it('should throw error if comments are disabled', async () => {
+      const postWithCommentsDisabled = {
+        id: 'post1',
+        commentsEnabled: false
+      }
+      mockPrisma.post.findUnique.mockResolvedValue(postWithCommentsDisabled)
+
+      await expect(commentService.createComment('user1', 'post1', {
+        content: 'Test comment'
+      })).rejects.toThrow('Comments are disabled for this post')
+      
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith({
+        where: { id: 'post1' },
+        select: { id: true, commentsEnabled: true }
+      })
+    })
   })
 
   describe('updateComment', () => {

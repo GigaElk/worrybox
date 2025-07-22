@@ -91,6 +91,83 @@ describe('Post Routes', () => {
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('should create post with comments enabled by default', async () => {
+      const mockPost = {
+        id: 'post-id',
+        userId: 'user-id',
+        shortContent: 'This is my worry',
+        longContent: null,
+        worryPrompt: "What's weighing on your mind today?",
+        privacyLevel: 'public',
+        commentsEnabled: true,
+        isScheduled: false,
+        scheduledFor: null,
+        publishedAt: new Date(),
+        detectedLanguage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        user: {
+          id: 'user-id',
+          username: 'testuser',
+          displayName: 'Test User',
+          avatarUrl: null,
+        },
+      };
+
+      (mockPrisma.post.create as jest.Mock).mockResolvedValue(mockPost);
+
+      const response = await request(app)
+        .post('/posts')
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          shortContent: 'This is my worry',
+          worryPrompt: "What's weighing on your mind today?",
+          privacyLevel: 'public',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.commentsEnabled).toBe(true);
+    });
+
+    it('should create post with comments disabled when specified', async () => {
+      const mockPost = {
+        id: 'post-id',
+        userId: 'user-id',
+        shortContent: 'This is my worry',
+        longContent: null,
+        worryPrompt: "What's weighing on your mind today?",
+        privacyLevel: 'public',
+        commentsEnabled: false,
+        isScheduled: false,
+        scheduledFor: null,
+        publishedAt: new Date(),
+        detectedLanguage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        user: {
+          id: 'user-id',
+          username: 'testuser',
+          displayName: 'Test User',
+          avatarUrl: null,
+        },
+      };
+
+      (mockPrisma.post.create as jest.Mock).mockResolvedValue(mockPost);
+
+      const response = await request(app)
+        .post('/posts')
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          shortContent: 'This is my worry',
+          worryPrompt: "What's weighing on your mind today?",
+          privacyLevel: 'public',
+          commentsEnabled: false,
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.commentsEnabled).toBe(false);
+    });
+
     it('should return unauthorized without token', async () => {
       const response = await request(app)
         .post('/posts')
@@ -234,6 +311,48 @@ describe('Post Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Post updated successfully');
       expect(response.body.data.shortContent).toBe('Updated worry');
+    });
+
+    it('should update post comment settings successfully', async () => {
+      const mockExistingPost = {
+        id: 'post-id',
+        userId: 'user-id',
+      };
+
+      const mockUpdatedPost = {
+        id: 'post-id',
+        userId: 'user-id',
+        shortContent: 'This is my worry',
+        longContent: null,
+        worryPrompt: "What's weighing on your mind today?",
+        privacyLevel: 'public',
+        commentsEnabled: false,
+        isScheduled: false,
+        scheduledFor: null,
+        publishedAt: new Date(),
+        detectedLanguage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        user: {
+          id: 'user-id',
+          username: 'testuser',
+          displayName: 'Test User',
+          avatarUrl: null,
+        },
+      };
+
+      (mockPrisma.post.findFirst as jest.Mock).mockResolvedValue(mockExistingPost);
+      (mockPrisma.post.update as jest.Mock).mockResolvedValue(mockUpdatedPost);
+
+      const response = await request(app)
+        .put('/posts/post-id')
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          commentsEnabled: false,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.commentsEnabled).toBe(false);
     });
 
     it('should return 404 for non-existent post', async () => {

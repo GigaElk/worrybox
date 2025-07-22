@@ -7,9 +7,10 @@ import toast from 'react-hot-toast'
 interface CommentSectionProps {
   postId: string
   className?: string
+  commentsEnabled?: boolean
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '' }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '', commentsEnabled = true }) => {
   const { user, isAuthenticated } = useAuth()
   const [comments, setComments] = useState<CommentResponse[]>([])
   const [commentCount, setCommentCount] = useState(0)
@@ -50,6 +51,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '' 
     e.preventDefault()
     if (!isAuthenticated) {
       toast.error('Please log in to comment')
+      return
+    }
+    if (!commentsEnabled) {
+      toast.error('Comments are disabled for this post')
       return
     }
     if (!newComment.trim()) return

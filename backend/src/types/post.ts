@@ -2,6 +2,7 @@ export interface CreatePostRequest {
   shortContent: string;
   worryPrompt: string;
   privacyLevel: 'public' | 'friends' | 'private';
+  commentsEnabled?: boolean;
   longContent?: string;
   isScheduled?: boolean;
   scheduledFor?: string; // ISO date string
@@ -16,6 +17,7 @@ export interface UpdatePostRequest {
   longContent?: string;
   privacyLevel?: 'public' | 'friends' | 'private';
   worryPrompt?: string;
+  commentsEnabled?: boolean;
 }
 
 export interface PostResponse {
@@ -25,6 +27,7 @@ export interface PostResponse {
   longContent?: string;
   worryPrompt: string;
   privacyLevel: string;
+  commentsEnabled: boolean;
   isScheduled: boolean;
   scheduledFor?: string;
   publishedAt?: string;

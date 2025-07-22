@@ -47,6 +47,7 @@ model Post {
   longContent      String?   @map("long_content")
   worryPrompt      String    @map("worry_prompt")
   privacyLevel     String    @map("privacy_level") // 'public', 'friends', 'private'
+  commentsEnabled  Boolean   @default(true) @map("comments_enabled")
   isScheduled      Boolean   @default(false) @map("is_scheduled")
   scheduledFor     DateTime? @map("scheduled_for")
   publishedAt      DateTime? @map("published_at")

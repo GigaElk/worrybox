@@ -170,6 +170,15 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
                   </div>
                 </>
               )}
+              {!post.commentsEnabled && (
+                <>
+                  <span className="text-xs text-gray-500">•</span>
+                  <div className="flex items-center space-x-1">
+                    <Lock className="w-3 h-3 text-gray-500" />
+                    <span className="text-xs text-gray-500">Comments disabled</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -323,7 +332,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
       )}
 
       {/* Comments Section */}
-      <CommentSection postId={post.id} />
+      {post.commentsEnabled ? (
+        <CommentSection postId={post.id} commentsEnabled={post.commentsEnabled} />
+      ) : (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-center py-3 text-gray-500">
+            <Lock className="w-4 h-4 mr-2" />
+            <span className="text-sm">Comments are disabled for this post</span>
+          </div>
+        </div>
+      )}
 
       {/* Resolution Modal */}
       <ResolutionModal
