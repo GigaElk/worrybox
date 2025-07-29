@@ -7,6 +7,7 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "lint": "echo 'Linting not configured yet'",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:unit": "jest --selectProjects unit",

@@ -11,6 +11,7 @@ module.exports = {
     '^.+\\.ts$': 'ts-jest',
   },
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
+  setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -37,6 +38,7 @@ module.exports = {
       testEnvironment: 'node',
       displayName: 'unit',
       testMatch: ['<rootDir>/src/tests/unit/**/*.test.ts'],
+      setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       transform: {
         '^.+\\.ts$': 'ts-jest',
@@ -47,6 +49,7 @@ module.exports = {
       testEnvironment: 'node',
       displayName: 'integration',
       testMatch: ['<rootDir>/src/tests/integration/**/*.test.ts'],
+      setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       transform: {
         '^.+\\.ts$': 'ts-jest',
@@ -57,6 +60,7 @@ module.exports = {
       testEnvironment: 'node',
       displayName: 'e2e',
       testMatch: ['<rootDir>/src/tests/e2e/**/*.test.ts'],
+      setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       transform: {
         '^.+\\.ts$': 'ts-jest',
@@ -67,6 +71,7 @@ module.exports = {
       testEnvironment: 'node',
       displayName: 'performance',
       testMatch: ['<rootDir>/src/tests/performance/**/*.test.ts'],
+      setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       transform: {
         '^.+\\.ts$': 'ts-jest',
@@ -77,6 +82,7 @@ module.exports = {
       testEnvironment: 'node',
       displayName: 'security',
       testMatch: ['<rootDir>/src/tests/security/**/*.test.ts'],
+      setupFiles: ['<rootDir>/src/tests/env.setup.ts'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       transform: {
         '^.+\\.ts$': 'ts-jest',
