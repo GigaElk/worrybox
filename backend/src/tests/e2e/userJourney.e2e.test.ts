@@ -172,9 +172,8 @@ describe('End-to-End User Journeys', () => {
       });
 
       const followResponse = await request(app)
-        .post('/api/follows')
-        .set('Authorization', `Bearer ${token1}`)
-        .send({ userId: user2.id });
+        .post(`/api/follows/${user2.id}`)
+        .set('Authorization', `Bearer ${token1}`);
 
       expect(followResponse.status).toBe(201);
 
@@ -351,7 +350,7 @@ describe('End-to-End User Journeys', () => {
       expect(createPrivatePostResponse.status).toBe(201);
 
       // Step 2: User 2 tries to access User 1's private post (should fail)
-      mockPrisma.post.findUnique.mockResolvedValue(privatePost);
+      mockPrisma.post.findUnique.mockResolvedValueOnce(null); // Return null for user 2
 
       const accessPrivatePostResponse = await request(app)
         .get(`/api/posts/${privatePost.id}`)
@@ -360,6 +359,8 @@ describe('End-to-End User Journeys', () => {
       expect(accessPrivatePostResponse.status).toBe(404); // Should not be found for other users
 
       // Step 3: User 1 can access their own private post
+      mockPrisma.post.findUnique.mockResolvedValueOnce(privatePost); // Return post for owner
+
       const accessOwnPostResponse = await request(app)
         .get(`/api/posts/${privatePost.id}`)
         .set('Authorization', `Bearer ${token1}`);

@@ -250,7 +250,7 @@ describe('Security Tests', () => {
     it('should enforce rate limits on authentication endpoints', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      const results = await testRateLimiting(request(app), '/api/auth/login', 'post', 5);
+      const results = await testRateLimiting(app, '/api/auth/login', 'post', 5);
 
       expect(results.wasRateLimited).toBe(true);
       expect(results.rateLimitedCount).toBeGreaterThan(0);
@@ -261,10 +261,11 @@ describe('Security Tests', () => {
       mockPrisma.post.create.mockResolvedValue(mockPost);
 
       const results = await testRateLimiting(
-        request(app).set('Authorization', 'Bearer mock-token'),
+        app,
         '/api/posts',
         'post',
-        5
+        5,
+        'Bearer mock-token'
       );
 
       expect(results.wasRateLimited).toBe(true);
@@ -272,7 +273,7 @@ describe('Security Tests', () => {
 
     it('should have different rate limits for different endpoints', async () => {
       // Test that read operations might have higher limits than write operations
-      const readResults = await testRateLimiting(request(app), '/api/posts', 'get', 5);
+      const readResults = await testRateLimiting(app, '/api/posts', 'get', 5);
       
       // Reads might be rate limited less aggressively
       expect(readResults.totalRequests).toBe(6);

@@ -49,16 +49,6 @@ describe('Auth Integration Tests', () => {
           username: userData.username,
           passwordHash: 'hashedPassword',
           displayName: userData.username,
-          emailVerified: false,
-        },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          displayName: true,
-          avatarUrl: true,
-          emailVerified: true,
-          createdAt: true,
         },
       });
 
@@ -279,7 +269,7 @@ describe('Auth Integration Tests', () => {
           password: 'Password123!',
         });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
     });
 

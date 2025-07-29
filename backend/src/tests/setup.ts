@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import request from 'supertest';
 
 // Global test setup
 export const mockPrisma = {
@@ -308,14 +309,19 @@ export const createMaliciousPayload = (type: 'xss' | 'sql' | 'nosql') => {
 };
 
 export const testRateLimiting = async (
-  request: any,
+  app: any,
   endpoint: string,
   method: 'get' | 'post' | 'put' | 'delete' = 'get',
-  maxRequests: number = 100
+  maxRequests: number = 100,
+  authToken?: string
 ) => {
   const requests = [];
   for (let i = 0; i < maxRequests + 1; i++) {
-    requests.push(request[method](endpoint));
+    const req = request(app)[method](endpoint);
+    if (authToken) {
+      req.set('Authorization', authToken);
+    }
+    requests.push(req);
   }
   
   const responses = await Promise.all(requests);
