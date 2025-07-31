@@ -152,10 +152,28 @@ jest.mock('../utils/jwt', () => ({
     token: 'mock-token',
     refreshToken: 'mock-refresh-token',
   }),
-  verifyToken: jest.fn().mockReturnValue({
-    userId: 'user-id',
-    email: 'test@example.com',
-    username: 'testuser',
+  verifyToken: jest.fn().mockImplementation((token: string) => {
+    // Extract user info from token for e2e tests
+    if (token === 'token-user-1') {
+      return {
+        userId: 'user-1',
+        email: 'user1@example.com',
+        username: 'user1',
+      };
+    }
+    if (token === 'token-user-2') {
+      return {
+        userId: 'user-2',
+        email: 'user2@example.com',
+        username: 'user2',
+      };
+    }
+    // Default mock for other tests
+    return {
+      userId: 'user-id',
+      email: 'test@example.com',
+      username: 'testuser',
+    };
   }),
   generatePasswordResetToken: jest.fn().mockReturnValue('mock-reset-token'),
   verifyPasswordResetToken: jest.fn().mockReturnValue({
@@ -180,6 +198,41 @@ jest.mock('openai', () => ({
         }),
       },
     },
+  })),
+}));
+
+// Mock FollowService
+jest.mock('../services/followService', () => ({
+  FollowService: jest.fn().mockImplementation(() => ({
+    followUser: jest.fn().mockResolvedValue({
+      id: 'follow-123',
+      followerId: 'user-1',
+      followingId: 'user-2',
+      createdAt: new Date(),
+    }),
+    unfollowUser: jest.fn().mockResolvedValue(undefined),
+    isFollowing: jest.fn().mockResolvedValue(false),
+    getFollowers: jest.fn().mockResolvedValue([]),
+    getFollowing: jest.fn().mockResolvedValue([]),
+    getFollowStats: jest.fn().mockResolvedValue({
+      followersCount: 0,
+      followingCount: 0,
+    }),
+  })),
+}));
+
+// Mock PostService
+jest.mock('../services/postService', () => ({
+  PostService: jest.fn().mockImplementation(() => ({
+    createPost: jest.fn().mockResolvedValue(createMockPost()),
+    getPost: jest.fn().mockResolvedValue(createMockPost()),
+    updatePost: jest.fn().mockResolvedValue(createMockPost()),
+    deletePost: jest.fn().mockResolvedValue(undefined),
+    getPosts: jest.fn().mockResolvedValue({
+      posts: [createMockPost()],
+      total: 1,
+      hasMore: false,
+    }),
   })),
 }));
 

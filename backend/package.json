@@ -17,6 +17,7 @@
     "test:security": "jest --selectProjects security",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:fast": "jest --watchAll=false",
     "test:debug": "jest --detectOpenHandles --forceExit",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

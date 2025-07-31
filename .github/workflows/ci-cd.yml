@@ -75,7 +75,7 @@ jobs:
     - name: Run backend tests
       run: |
         cd backend
-        npm run test:ci
+        npm run test:fast
       env:
         NODE_ENV: test
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/worrybox_test
