@@ -86,7 +86,7 @@ export class LemonSqueezyService {
       {
         id: 'free',
         name: 'Free',
-        description: 'Basic worry sharing and community support',
+        description: 'Basic worry sharing and community support (after 30-day trial)',
         price: 0,
         currency: 'USD',
         interval: 'month',
@@ -113,12 +113,12 @@ export class LemonSqueezyService {
           'Export your data'
         ],
         lemonSqueezyVariantId: process.env.LEMONSQUEEZY_SUPPORTER_VARIANT_ID || '',
-        isPopular: true,
+        isPopular: false, // Premium is now more popular due to trial
       },
       {
         id: 'premium',
         name: 'Premium',
-        description: 'Full access to all features and insights',
+        description: 'Full access to all features and insights (30-day free trial for new users!)',
         price: 12,
         currency: 'USD',
         interval: 'month',
@@ -128,9 +128,11 @@ export class LemonSqueezyService {
           'Guided exercises and coping techniques',
           'Mental health resource integration',
           'Smart notifications',
-          'Early access to new features'
+          'Early access to new features',
+          '🎉 30-day free trial for new users'
         ],
         lemonSqueezyVariantId: process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
+        isPopular: true, // Now most popular due to free trial
       }
     ];
   }
@@ -452,7 +454,13 @@ export class LemonSqueezyService {
    */
   async hasFeatureAccess(userId: string, feature: string): Promise<boolean> {
     const subscription = await this.getUserSubscription(userId);
-    const tier = subscription?.tier || 'free';
+    let tier = subscription?.tier || 'free';
+
+    // Check if user is in trial period
+    if (subscription?.trialEndsAt && new Date() < subscription.trialEndsAt) {
+      // During trial, user has premium access regardless of their tier
+      tier = 'premium';
+    }
 
     const featureAccess: Record<string, string[]> = {
       'personal_analytics': ['supporter', 'premium'],
@@ -466,5 +474,62 @@ export class LemonSqueezyService {
     };
 
     return featureAccess[feature]?.includes(tier) || false;
+  }
+
+  /**
+   * Get user's trial status
+   */
+  async getTrialStatus(userId: string): Promise<{
+    isInTrial: boolean;
+    trialEndsAt: Date | null;
+    daysRemaining: number;
+  }> {
+    const subscription = await this.getUserSubscription(userId);
+    
+    if (!subscription?.trialEndsAt) {
+      return {
+        isInTrial: false,
+        trialEndsAt: null,
+        daysRemaining: 0,
+      };
+    }
+
+    const now = new Date();
+    const trialEnd = subscription.trialEndsAt;
+    const isInTrial = now < trialEnd;
+    const daysRemaining = isInTrial 
+      ? Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    return {
+      isInTrial,
+      trialEndsAt: trialEnd,
+      daysRemaining,
+    };
+  }
+
+  /**
+   * Handle trial expiration - downgrade user to free tier
+   */
+  async handleTrialExpiration(userId: string): Promise<void> {
+    const subscription = await this.getUserSubscription(userId);
+    
+    if (!subscription) return;
+
+    // Check if trial has expired and user doesn't have a paid subscription
+    if (subscription.trialEndsAt && 
+        new Date() >= subscription.trialEndsAt && 
+        !subscription.lemonSqueezyId) {
+      
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          tier: 'free',
+          trialEndsAt: null, // Clear trial end date
+        },
+      });
+
+      console.log(`✅ Trial expired for user ${userId}, downgraded to free tier`);
+    }
   }
 }

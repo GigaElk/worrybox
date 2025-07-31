@@ -25,16 +25,17 @@ export class SchedulingService {
       return;
     }
 
-    // Run every minute to check for posts to publish
+    // Run every minute to check for posts to publish and trial expirations
     this.cronJob = cron.schedule('* * * * *', async () => {
       try {
         await this.publishScheduledPosts();
+        await this.handleTrialExpirations();
       } catch (error) {
-        console.error('❌ Error in scheduled post publishing:', error);
+        console.error('❌ Error in scheduled tasks:', error);
       }
     });
 
-    console.log('📅 Post scheduler started - checking every minute for posts to publish');
+    console.log('📅 Scheduler started - checking every minute for posts to publish and trial expirations');
   }
 
   /**
@@ -250,5 +251,59 @@ export class SchedulingService {
       scheduledToday,
       scheduledThisWeek
     };
+  }
+
+  /**
+   * Handle trial expirations - downgrade users whose trials have expired
+   */
+  private async handleTrialExpirations(): Promise<void> {
+    const now = new Date();
+    
+    // Find subscriptions with expired trials that haven't been processed
+    const expiredTrials = await prisma.subscription.findMany({
+      where: {
+        trialEndsAt: {
+          lte: now
+        },
+        tier: 'premium', // Still on premium tier but trial expired
+        lemonSqueezyId: null, // No paid subscription
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            displayName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (expiredTrials.length === 0) {
+      return; // No expired trials to process
+    }
+
+    console.log(`⏰ Processing ${expiredTrials.length} expired trial(s)`);
+
+    // Downgrade each expired trial to free tier
+    for (const subscription of expiredTrials) {
+      try {
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            tier: 'free',
+            trialEndsAt: null, // Clear trial end date
+          }
+        });
+
+        console.log(`⬇️ Trial expired for ${subscription.user.displayName || subscription.user.username} - downgraded to free tier`);
+        
+        // TODO: Send email notification about trial expiration
+        // await sendTrialExpirationEmail(subscription.user.email);
+        
+      } catch (error) {
+        console.error(`❌ Failed to process trial expiration for subscription ${subscription.id}:`, error);
+      }
+    }
   }
 }

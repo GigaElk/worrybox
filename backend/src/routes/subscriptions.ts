@@ -10,6 +10,7 @@ router.get('/tiers', subscriptionController.getSubscriptionTiers);
 
 // Protected routes (require authentication)
 router.get('/current', authenticateToken, subscriptionController.getUserSubscription);
+router.get('/trial-status', authenticateToken, subscriptionController.getTrialStatus);
 router.post('/checkout', authenticateToken, subscriptionController.createCheckout);
 router.get('/portal', authenticateToken, subscriptionController.getCustomerPortal);
 router.get('/features/:feature/access', authenticateToken, subscriptionController.checkFeatureAccess);

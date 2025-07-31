@@ -18,18 +18,19 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      postgres:
-        image: postgres:15
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: worrybox_test
+          SA_PASSWORD: YourPassword123!
+          ACCEPT_EULA: Y
+          MSSQL_PID: Express
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourPassword123! -Q 'SELECT 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 1433:1433
       
       redis:
         image: redis:7
@@ -68,9 +69,12 @@ jobs:
     - name: Setup test database
       run: |
         cd backend
-        npx prisma migrate deploy
+        # Create test database
+        docker exec $(docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest) /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourPassword123! -Q "CREATE DATABASE worrybox_test"
+        # Push schema to database
+        npx prisma db push --force-reset
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/worrybox_test
+        DATABASE_URL: "sqlserver://localhost:1433;database=worrybox_test;user=sa;password=YourPassword123!;encrypt=false;trustServerCertificate=true"
 
     - name: Run backend tests
       run: |
@@ -78,7 +82,7 @@ jobs:
         npm run test:fast
       env:
         NODE_ENV: test
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/worrybox_test
+        DATABASE_URL: "sqlserver://localhost:1433;database=worrybox_test;user=sa;password=YourPassword123!;encrypt=false;trustServerCertificate=true"
         JWT_SECRET: test-jwt-secret-key-for-testing-only
         JWT_REFRESH_SECRET: test-refresh-secret-key-for-testing-only
         OPENAI_API_KEY: test-openai-key

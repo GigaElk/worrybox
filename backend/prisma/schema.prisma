@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
@@ -72,7 +72,7 @@ model Comment {
   userId            String    @map("user_id")
   content           String
   moderationStatus  String    @default("pending") @map("moderation_status") // 'approved', 'flagged', 'rejected', 'pending'
-  moderationScore   Decimal?  @map("moderation_score") @db.Decimal(3, 2)
+  moderationScore   Decimal?  @map("moderation_score") @db.Decimal(5, 2)
   parentCommentId   String?   @map("parent_comment_id")
   detectedLanguage  String?   @map("detected_language")
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -80,8 +80,8 @@ model Comment {
 
   // Relations
   post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies         Comment[] @relation("CommentReplies")
   moderationQueue ModerationQueue?
   reports         CommentReport[]
@@ -97,7 +97,7 @@ model Follow {
 
   // Relations
   follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -111,7 +111,7 @@ model Like {
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([userId, postId])
   @@map("likes")
@@ -147,8 +147,8 @@ model WorryAnalysis {
   postId            String   @unique @map("post_id")
   category          String
   subcategory       String?
-  sentimentScore    Decimal? @map("sentiment_score") @db.Decimal(3, 2)
-  keywords          String[]
+  sentimentScore    Decimal? @map("sentiment_score") @db.Decimal(5, 2)
+  keywords          String?  @db.NVarChar(Max) // Comma-separated values
   similarWorryCount Int      @default(0) @map("similar_worry_count")
   analysisVersion   String   @default("1.0") @map("analysis_version")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -163,7 +163,7 @@ model WorryAnalysis {
 model AnalyticsCache {
   id        String   @id @default(uuid())
   cacheKey  String   @unique @map("cache_key")
-  data      Json
+  data      String   @db.NVarChar(Max)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -175,14 +175,14 @@ model WorryResolution {
   postId             String   @unique @map("post_id")
   userId             String   @map("user_id")
   resolutionStory    String?  @map("resolution_story")
-  copingMethods      String[]  @map("coping_methods")
+  copingMethods      String?   @map("coping_methods") @db.NVarChar(Max) // Comma-separated values
   helpfulnessRating  Int?     @map("helpfulness_rating") // 1-5
   resolvedAt         DateTime @default(now()) @map("resolved_at")
   createdAt          DateTime @default(now()) @map("created_at")
 
   // Relations
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("worry_resolutions")
 }
@@ -192,7 +192,7 @@ model GuidedExercise {
   title           String
   description     String
   category        String
-  instructions    Json
+  instructions    String   @db.NVarChar(Max)
   durationMinutes Int?     @map("duration_minutes")
   difficultyLevel String?  @map("difficulty_level") // 'beginner', 'intermediate', 'advanced'
   createdAt       DateTime @default(now()) @map("created_at")
@@ -215,7 +215,7 @@ model UserExerciseCompletion {
   // Relations
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise GuidedExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  post     Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post     Post?          @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("user_exercise_completions")
 }
@@ -245,7 +245,7 @@ model Notification {
   isRead       Boolean   @default(false) @map("is_read")
   sentAt       DateTime? @map("sent_at")
   scheduledFor DateTime? @map("scheduled_for")
-  metadata     Json      @default("{}")
+  metadata     String    @default("{}") @db.NVarChar(Max)
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -316,7 +316,7 @@ model WorryPrompt {
 model ModerationQueue {
   id              String    @id @default(uuid())
   commentId       String    @map("comment_id")
-  flaggedReasons  String[]  @map("flagged_reasons")
+  flaggedReasons  String?   @map("flagged_reasons") @db.NVarChar(Max) // Comma-separated values
   status          String    @default("pending") // 'pending', 'reviewed'
   reviewedBy      String?   @map("reviewed_by")
   reviewedAt      DateTime? @map("reviewed_at")
@@ -341,7 +341,7 @@ model CommentReport {
 
   // Relations
   comment  Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  reporter User    @relation("CommentReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter User    @relation("CommentReports", fields: [reporterId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([commentId, reporterId]) // Prevent duplicate reports from same user
   @@map("comment_reports")
@@ -356,7 +356,7 @@ model Exercise {
   duration    Int      // in minutes
   difficulty  String   // beginner, intermediate, advanced
   steps       ExerciseStep[]
-  tags        String[]
+  tags        String?  @db.NVarChar(Max) // Comma-separated values
   imageUrl    String?
   videoUrl    String?
   audioUrl    String?
@@ -372,7 +372,7 @@ model ExerciseStep {
   exerciseId  String   @map("exercise_id")
   order       Int
   title       String
-  content     String   @db.Text
+  content     String   @db.NVarChar(Max)
   duration    Int?     // in seconds
   imageUrl    String?
   createdAt   DateTime @default(now()) @map("created_at")
@@ -389,11 +389,11 @@ model CopingTechnique {
   title             String
   description       String
   category          String
-  instructions      String     @db.Text
-  whenToUse         String[]
+  instructions      String     @db.NVarChar(Max)
+  whenToUse         String?  @db.NVarChar(Max) // Comma-separated values
   effectiveness     Int        // 1-5 scale
   scienceBasedRating Int       @map("science_based_rating") // 1-5 scale
-  tags              String[]
+  tags              String?  @db.NVarChar(Max) // Comma-separated values
   imageUrl          String?
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")

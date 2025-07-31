@@ -43,12 +43,16 @@ export class AuthService {
       },
     });
 
-    // Create default subscription (free tier)
+    // Create default subscription with 30-day premium trial
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 days from now
+
     await prisma.subscription.create({
       data: {
         userId: user.id,
-        tier: 'free',
+        tier: 'premium', // Start with premium during trial
         status: 'active',
+        trialEndsAt: trialEndDate,
       },
     });
 

@@ -248,4 +248,38 @@ export class SubscriptionController {
       });
     }
   }
+
+  /**
+   * Get user's trial status
+   */
+  async getTrialStatus(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const trialStatus = await lemonSqueezyService.getTrialStatus(req.user.userId);
+      
+      res.json({
+        data: trialStatus,
+      });
+    } catch (error: any) {
+      console.error('Failed to get trial status:', error);
+      res.status(500).json({
+        error: {
+          code: 'TRIAL_STATUS_FETCH_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
 }
