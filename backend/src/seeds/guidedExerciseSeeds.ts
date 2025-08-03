@@ -13,7 +13,7 @@ export async function seedGuidedExercises() {
       category: 'breathing',
       duration: 5,
       difficulty: 'beginner',
-      tags: ['anxiety', 'relaxation', 'stress', 'sleep'],
+      tags: 'anxiety,relaxation,stress,sleep',
       steps: {
         create: [
           {
@@ -64,7 +64,7 @@ export async function seedGuidedExercises() {
       category: 'mindfulness',
       duration: 15,
       difficulty: 'beginner',
-      tags: ['mindfulness', 'relaxation', 'body awareness', 'tension relief'],
+      tags: 'mindfulness,relaxation,body awareness,tension relief',
       steps: {
         create: [
           {
@@ -121,7 +121,7 @@ export async function seedGuidedExercises() {
       category: 'cognitive',
       duration: 10,
       difficulty: 'intermediate',
-      tags: ['worry', 'anxiety', 'cognitive', 'time management'],
+      tags: 'worry,anxiety,cognitive,time management',
       steps: {
         create: [
           {
@@ -193,16 +193,10 @@ export async function seedCopingTechniques() {
 **1 thing you can TASTE**: Focus on 1 taste in your mouth, or take a sip of water and really taste it.
 
 Take your time with each step. This technique helps interrupt anxious thoughts and brings your attention to the present moment.`,
-      whenToUse: [
-        'When feeling overwhelmed or panicked',
-        'During anxiety attacks',
-        'When your mind is racing with worries',
-        'Before important events or meetings',
-        'When feeling disconnected or dissociated'
-      ],
+      whenToUse: 'When feeling overwhelmed or panicked,During anxiety attacks,When your mind is racing with worries,Before important events or meetings,When feeling disconnected or dissociated',
       effectiveness: 4,
       scienceBasedRating: 5,
-      tags: ['grounding', 'anxiety', 'panic', 'mindfulness', 'present moment'],
+      tags: 'grounding,anxiety,panic,mindfulness,present moment',
       resources: {
         create: [
           {
@@ -244,16 +238,10 @@ Take your time with each step. This technique helps interrupt anxious thoughts a
 **5. Create a balanced thought**: Develop a more realistic, balanced perspective that considers all the evidence.
 
 **6. Notice the difference**: Pay attention to how the balanced thought makes you feel compared to the original negative thought.`,
-      whenToUse: [
-        'When stuck in negative thinking patterns',
-        'During periods of high worry or anxiety',
-        'When facing challenging situations',
-        'Before making important decisions',
-        'When feeling overwhelmed by catastrophic thoughts'
-      ],
+      whenToUse: 'When stuck in negative thinking patterns,During periods of high worry or anxiety,When facing challenging situations,Before making important decisions,When feeling overwhelmed by catastrophic thoughts',
       effectiveness: 5,
       scienceBasedRating: 5,
-      tags: ['cognitive', 'thoughts', 'CBT', 'negative thinking', 'reframing'],
+      tags: 'cognitive,thoughts,CBT,negative thinking,reframing',
       resources: {
         create: [
           {
@@ -301,16 +289,10 @@ Take your time with each step. This technique helps interrupt anxious thoughts a
 10. **Whole body**: Tense everything for 5 seconds, then release
 
 **Finish**: Take several deep breaths and enjoy the feeling of relaxation throughout your body.`,
-      whenToUse: [
-        'When feeling physically tense or stressed',
-        'Before bedtime to improve sleep',
-        'During breaks at work',
-        'When experiencing muscle tension from anxiety',
-        'As a regular relaxation practice'
-      ],
+      whenToUse: 'When feeling physically tense or stressed,Before bedtime to improve sleep,During breaks at work,When experiencing muscle tension from anxiety,As a regular relaxation practice',
       effectiveness: 4,
       scienceBasedRating: 5,
-      tags: ['relaxation', 'muscle tension', 'stress', 'sleep', 'physical'],
+      tags: 'relaxation,muscle tension,stress,sleep,physical',
       resources: {
         create: [
           {
