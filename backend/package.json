@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.prod.json",
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
     "postinstall": "npx prisma generate",
@@ -30,7 +30,7 @@
     "render:build": "npm ci --include=dev && npm run build && npx prisma generate",
     "render:start": "npm start",
     "render:install": "npm ci",
-    "build:prod": "tsc && npx prisma generate"
+    "build:prod": "tsc -p tsconfig.prod.json && npx prisma generate"
   },
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
@@ -59,10 +59,10 @@
     "prisma": "^6.12.0",
     "stripe": "^14.7.0",
     "typescript": "^5.2.2",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "@types/jest": "^29.5.8"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.8",
     "@types/supertest": "^2.0.16",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
