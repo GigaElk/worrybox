@@ -1,0 +1,41 @@
+services:
+  # Backend API Service
+  - type: web
+    name: worrybox-backend
+    env: node
+    region: oregon
+    plan: starter # Free tier
+    buildCommand: cd backend && npm ci && npm run build && npx prisma generate
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DISABLE_PAYMENTS
+        value: true
+      - key: FRONTEND_URL
+        value: https://worrybox-frontend.onrender.com
+      # These need to be set manually in Render.com dashboard:
+      # - DATABASE_URL (your Azure SQL connection string)
+      # - JWT_SECRET (generate a secure secret)
+      # - JWT_REFRESH_SECRET (generate a secure secret)
+      # - OPENAI_API_KEY (optional, for AI features)
+      # - EMAIL_HOST, EMAIL_USER, EMAIL_PASS (optional, for emails)
+
+  # Frontend Static Site
+  - type: static
+    name: worrybox-frontend
+    env: static
+    region: oregon
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://worrybox-backend.onrender.com
+      - key: REACT_APP_ENVIRONMENT
+        value: production
+
+# Note: Using external Azure SQL Database
+# No database configuration needed here since you're using Azure SQL

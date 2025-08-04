@@ -7,6 +7,8 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:prod": "node dist/index.js",
+    "postinstall": "npm run build && npx prisma generate",
     "lint": "echo 'Linting not configured yet'",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -23,7 +25,10 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "deploy": "node scripts/deploy.sh || scripts\\deploy.cmd",
+    "render:build": "npm ci && npm run build && npx prisma generate",
+    "render:start": "npm start"
   },
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",

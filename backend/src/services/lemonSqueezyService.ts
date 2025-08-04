@@ -453,6 +453,11 @@ export class LemonSqueezyService {
    * Check if user has access to a feature based on their subscription
    */
   async hasFeatureAccess(userId: string, feature: string): Promise<boolean> {
+    // MVP: Temporarily give everyone premium access while payment processing is disabled
+    if (process.env.DISABLE_PAYMENTS === 'true') {
+      return true;
+    }
+
     const subscription = await this.getUserSubscription(userId);
     let tier = subscription?.tier || 'free';
 

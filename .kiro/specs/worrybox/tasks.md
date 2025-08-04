@@ -206,20 +206,24 @@
   - Create backup and disaster recovery procedures
   - Add performance monitoring and alerting systems
   - Configure CI/CD pipeline for automated testing and deployment
-  - _Requirements: 9.3, 9.6, 9.7_-
-    [ ] 23. Prepare for Azure deployment and optimization
-  - Create Docker containers for frontend and backend applications
-  - Set up Azure-specific configuration files and environment variables
-  - Optimize database queries and implement caching strategies
-  - Configure Azure Cognitive Services for AI moderation (alternative to OpenAI)
-  - Set up Azure Storage for file uploads and user avatars
-  - Create deployment scripts and documentation for Azure services
   - _Requirements: 9.3, 9.6, 9.7_
 
-- [ ] 24. Implement CI/CD pipeline for Azure
+- [x] 23. Prepare for Render.com deployment and optimization
+
+
+
+  - Configure Render.com deployment settings and environment variables
+  - Set up build and start scripts for Node.js backend deployment
+  - Optimize database queries and implement caching strategies
+  - Configure file upload handling for user avatars (local storage or cloud)
+  - Create deployment documentation for Render.com services
+  - Set up frontend deployment (Vercel/Netlify) with backend API integration
+  - _Requirements: 9.3, 9.6, 9.7_
+
+- [ ] 24. Implement CI/CD pipeline for Render.com
 
   - Set up GitHub Actions workflow for automated testing
-  - Configure automated deployment to Azure App Service and Static Web Apps
+  - Configure automated deployment to Render.com web service
   - Implement database migration automation for production deployments
   - Add automated security scanning and vulnerability checks
   - Set up staging environment for pre-production testing
@@ -228,12 +232,12 @@
 
 - [ ] 25. Production monitoring and analytics setup
 
-  - Configure Azure Application Insights for performance monitoring
+  - Configure application monitoring and logging for Render.com
   - Set up custom dashboards for system health and user metrics
   - Implement error tracking and alerting systems
   - Add user analytics and engagement tracking (privacy-compliant)
   - Configure automated backup and disaster recovery procedures
-  - Set up cost monitoring and optimization alerts for Azure resources
+  - Set up cost monitoring and optimization alerts
   - _Requirements: 9.6, 9.7_
 
 - [ ] 26. Security hardening and compliance
