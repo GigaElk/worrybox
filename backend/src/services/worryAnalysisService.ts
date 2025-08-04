@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { stringToArray } from '../utils/arrayHelpers';
 
 const prisma = new PrismaClient();
 
@@ -314,12 +315,14 @@ export class WorryAnalysisService {
         where: { category }
       });
 
-      // Count posts with similar keywords (simplified approach)
+      // Count posts with similar keywords (SQL Server string-based approach)
       const keywordMatches = await prisma.worryAnalysis.count({
         where: {
-          keywords: {
-            hasSome: keywords
-          }
+          OR: keywords.map(keyword => ({
+            keywords: {
+              contains: keyword
+            }
+          }))
         }
       });
 
@@ -382,11 +385,11 @@ export class WorryAnalysisService {
             {
               OR: [
                 { category: currentAnalysis.category },
-                {
+                ...stringToArray(currentAnalysis.keywords).map(keyword => ({
                   keywords: {
-                    hasSome: currentAnalysis.keywords
+                    contains: keyword
                   }
-                }
+                }))
               ]
             }
           ]
