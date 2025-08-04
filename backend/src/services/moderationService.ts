@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { stringToArrayOrUndefined } from '../utils/arrayHelpers';
 
 const prisma = new PrismaClient();
 
@@ -259,7 +260,7 @@ export class ModerationService {
         content: item.comment.content,
         moderationStatus: item.comment.moderationStatus,
         moderationScore: item.comment.moderationScore?.toNumber(),
-        flaggedReasons: item.flaggedReasons,
+        flaggedReasons: stringToArrayOrUndefined(item.flaggedReasons),
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
         comment: {
