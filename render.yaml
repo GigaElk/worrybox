@@ -5,7 +5,8 @@ services:
     env: node
     region: oregon
     plan: starter # Free tier
-    buildCommand: cd backend && npm ci && npm run build && npx prisma generate
+    # Don't set root directory - deploy from repo root
+    buildCommand: cd backend && npm ci --include=dev && npm run build && npx prisma generate
     startCommand: cd backend && npm start
     healthCheckPath: /api/health
     envVars:
