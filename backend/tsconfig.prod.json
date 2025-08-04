@@ -3,7 +3,12 @@
   "compilerOptions": {
     "sourceMap": false,
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "strict": false
   },
   "include": ["src/**/*"],
   "exclude": [

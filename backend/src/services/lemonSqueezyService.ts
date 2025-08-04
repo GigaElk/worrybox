@@ -200,12 +200,12 @@ export class LemonSqueezyService {
         body: JSON.stringify(checkoutData)
       });
 
-      if (!response.ok) {
-        const error = await response.text();
+      if (!(response as any).ok) {
+        const error = await (response as any).text();
         throw new Error(`LemonSqueezy API error: ${error}`);
       }
 
-      const result = await response.json() as any;
+      const result = await (response as any).json() as any;
       return result.data.attributes.url;
     } catch (error) {
       console.error('Failed to create checkout URL:', error);
