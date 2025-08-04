@@ -212,6 +212,8 @@
 
 
 
+
+
   - Configure Render.com deployment settings and environment variables
   - Set up build and start scripts for Node.js backend deployment
   - Optimize database queries and implement caching strategies
