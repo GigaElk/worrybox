@@ -14,14 +14,16 @@
     "declarationMap": true,
     "sourceMap": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "types": ["node"],
+    "moduleResolution": "node"
   },
   "include": ["src/**/*"],
   "exclude": [
-    "node_modules", 
-    "dist", 
-    "**/*.test.ts", 
-    "**/__tests__/**/*", 
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__/**/*",
     "**/tests/**/*",
     "src/tests/**/*"
   ]
