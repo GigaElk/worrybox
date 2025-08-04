@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { arrayToString, stringToArray } from '../utils/arrayHelpers';
 
 const prisma = new PrismaClient();
 
@@ -87,7 +88,7 @@ export class WorryResolutionService {
         postId,
         userId,
         resolutionStory: resolutionData.resolutionStory,
-        copingMethods: resolutionData.copingMethods,
+        copingMethods: arrayToString(resolutionData.copingMethods),
         helpfulnessRating: resolutionData.helpfulnessRating,
         resolvedAt: new Date()
       },
@@ -134,7 +135,7 @@ export class WorryResolutionService {
       where: { id: existingResolution.id },
       data: {
         resolutionStory: updateData.resolutionStory !== undefined ? updateData.resolutionStory : existingResolution.resolutionStory,
-        copingMethods: updateData.copingMethods || existingResolution.copingMethods,
+        copingMethods: updateData.copingMethods ? arrayToString(updateData.copingMethods) : existingResolution.copingMethods,
         helpfulnessRating: updateData.helpfulnessRating !== undefined ? updateData.helpfulnessRating : existingResolution.helpfulnessRating
       },
       include: {
@@ -293,7 +294,8 @@ export class WorryResolutionService {
     // Calculate most common coping methods
     const copingMethodCounts = new Map<string, number>();
     resolvedWorries.forEach(resolution => {
-      resolution.copingMethods.forEach(method => {
+      const methods = stringToArray(resolution.copingMethods);
+      methods.forEach(method => {
         copingMethodCounts.set(method, (copingMethodCounts.get(method) || 0) + 1);
       });
     });

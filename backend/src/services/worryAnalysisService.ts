@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { stringToArray } from '../utils/arrayHelpers';
+import { stringToArray, arrayToString } from '../utils/arrayHelpers';
 
 const prisma = new PrismaClient();
 
@@ -344,7 +344,7 @@ export class WorryAnalysisService {
           category: analysis.category,
           subcategory: analysis.subcategory,
           sentimentScore: analysis.sentimentScore,
-          keywords: analysis.keywords,
+          keywords: arrayToString(analysis.keywords),
           similarWorryCount: analysis.similarWorryCount,
           analysisVersion: '1.0',
           updatedAt: new Date()
@@ -354,7 +354,7 @@ export class WorryAnalysisService {
           category: analysis.category,
           subcategory: analysis.subcategory,
           sentimentScore: analysis.sentimentScore,
-          keywords: analysis.keywords,
+          keywords: arrayToString(analysis.keywords),
           similarWorryCount: analysis.similarWorryCount,
           analysisVersion: '1.0'
         }
@@ -421,10 +421,12 @@ export class WorryAnalysisService {
           }
 
           // Keyword overlap
-          const keywordOverlap = analysis.keywords.filter(keyword => 
-            currentAnalysis.keywords.includes(keyword)
+          const analysisKeywords = stringToArray(analysis.keywords);
+          const currentKeywords = stringToArray(currentAnalysis.keywords);
+          const keywordOverlap = analysisKeywords.filter(keyword => 
+            currentKeywords.includes(keyword)
           ).length;
-          similarity += (keywordOverlap / Math.max(analysis.keywords.length, currentAnalysis.keywords.length)) * 0.4;
+          similarity += (keywordOverlap / Math.max(analysisKeywords.length, currentKeywords.length)) * 0.4;
 
           return {
             id: analysis.post.id,
@@ -461,7 +463,7 @@ export class WorryAnalysisService {
         category: analysis.category,
         subcategory: analysis.subcategory || undefined,
         sentimentScore: analysis.sentimentScore?.toNumber() || 0,
-        keywords: analysis.keywords,
+        keywords: stringToArray(analysis.keywords),
         similarWorryCount: analysis.similarWorryCount,
         confidence: 0.8 // Stored analyses have good confidence
       };
@@ -519,7 +521,7 @@ export class WorryAnalysisService {
       for (const analysis of analyses) {
         const similarCount = await this.calculateSimilarWorryCount(
           analysis.category,
-          analysis.keywords
+          stringToArray(analysis.keywords)
         );
 
         await prisma.worryAnalysis.update({
