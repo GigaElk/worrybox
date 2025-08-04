@@ -154,7 +154,7 @@ export class NotificationService {
         type,
         title,
         message,
-        metadata: metadata || {},
+        metadata: JSON.stringify(metadata || {}),
         scheduledFor,
         isRead: false
       }
@@ -191,17 +191,22 @@ Return JSON with 'title' and 'message' fields.
 `;
 
     try {
-      // const response = await this.openaiService.generateText(aiContext, {
-      //   maxTokens: 200,
-      //   temperature: 0.7
-      // });
+      // Check if AI is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.log('🤖 AI notifications disabled - using fallback messages');
+        const fallbackMessages = [
+          { title: 'Thinking of you 💙', message: 'How are you doing today? Remember, it\'s okay to take things one step at a time.' },
+          { title: 'Just checking in ✨', message: 'You\'re doing better than you think. Take a moment to breathe.' },
+          { title: 'You\'ve got this 💪', message: 'Every small step forward counts. How are you feeling today?' },
+          { title: 'Be kind to yourself 🌱', message: 'Remember to treat yourself with the same compassion you\'d show a friend.' },
+          { title: 'One day at a time 🌅', message: 'Focus on today. You don\'t have to solve everything at once.' }
+        ];
+        
+        return fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
+      }
 
-      // const parsed = JSON.parse(response);
-      // return {
-      //   title: parsed.title || 'Thinking of you 💙',
-      //   message: parsed.message || 'How are you doing today? Remember, it\'s okay to take things one step at a time.'
-      // };
-      throw new Error('OpenAI service not available');
+      // TODO: Implement OpenAI integration when API key is available
+      throw new Error('OpenAI service not yet implemented');
     } catch (error) {
       console.error('Failed to generate smart check-in:', error);
       
@@ -241,17 +246,22 @@ Return JSON with 'title' and 'message' fields.
 `;
 
     try {
-      // const response = await this.openaiService.generateText(aiContext, {
-      //   maxTokens: 200,
-      //   temperature: 0.7
-      // });
+      // Check if AI is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.log('🤖 AI supportive messages disabled - using fallback messages');
+        const supportiveMessages = [
+          { title: 'You\'re not alone 💙', message: 'Difficult times don\'t last, but resilient people do. Take it one moment at a time.' },
+          { title: 'This too shall pass 🌈', message: 'Even the darkest storms eventually clear. You have the strength to weather this.' },
+          { title: 'You matter 💫', message: 'Your feelings are valid, and you deserve support. Consider reaching out to someone you trust.' },
+          { title: 'Small steps count 🌱', message: 'Healing isn\'t linear. Every small step forward is progress worth celebrating.' },
+          { title: 'Hope is here 🕊️', message: 'When things feel overwhelming, remember that help is available and tomorrow can be different.' }
+        ];
+        
+        return supportiveMessages[Math.floor(Math.random() * supportiveMessages.length)];
+      }
 
-      // const parsed = JSON.parse(response);
-      // return {
-      //   title: parsed.title || 'You\'re not alone 💙',
-      //   message: parsed.message || 'Difficult times don\'t last, but resilient people do. Take it one moment at a time.'
-      // };
-      throw new Error('OpenAI service not available');
+      // TODO: Implement OpenAI integration when API key is available
+      throw new Error('OpenAI service not yet implemented');
     } catch (error) {
       console.error('Failed to generate supportive message:', error);
       

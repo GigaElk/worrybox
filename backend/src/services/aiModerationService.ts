@@ -71,33 +71,44 @@ export class AIModerationService {
   }
 
   /**
-   * Placeholder for actual AI API call
-   * TODO: Implement OpenAI moderation API integration
+   * AI API call with graceful fallback
+   * TODO: Implement OpenAI moderation API integration when available
    */
   private async callAIModerationAPI(content: string, context?: any): Promise<ModerationResult | null> {
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Check if AI is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('🤖 AI moderation disabled - using rule-based moderation only');
+      return null; // Will fall back to rule-based moderation
+    }
 
-    // TODO: Replace with actual OpenAI API call
-    // Example implementation:
-    /*
-    const response = await openai.moderations.create({
-      input: content,
-    });
-    
-    const result = response.results[0];
-    const score = Math.max(...Object.values(result.category_scores));
-    
-    return {
-      status: this.determineStatus(score),
-      score,
-      confidence: 0.9,
-      reasons: this.extractReasons(result.categories)
-    };
-    */
+    try {
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    // For now, return null to trigger fallback
-    return null;
+      // TODO: Replace with actual OpenAI API call when ready
+      // Example implementation:
+      /*
+      const response = await openai.moderations.create({
+        input: content,
+      });
+      
+      const result = response.results[0];
+      const score = Math.max(...Object.values(result.category_scores));
+      
+      return {
+        status: this.determineStatus(score),
+        score,
+        confidence: 0.9,
+        reasons: this.extractReasons(result.categories)
+      };
+      */
+
+      // For now, return null to trigger fallback
+      return null;
+    } catch (error) {
+      console.error('AI moderation API failed:', error);
+      return null; // Will fall back to rule-based moderation
+    }
   }
 
   /**

@@ -95,6 +95,7 @@ import worryResolutionRoutes from './routes/worryResolution';
 import notificationsRoutes from './routes/notifications';
 import languagesRoutes from './routes/languages';
 import dashboardRoutes from './routes/dashboard';
+import statusRoutes from './routes/status';
 import { SchedulingService } from './services/schedulingService';
 import { NotificationScheduler } from './services/notificationScheduler';
 
@@ -117,6 +118,7 @@ app.use('/api/resolutions', worryResolutionRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/languages', languagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/status', statusRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

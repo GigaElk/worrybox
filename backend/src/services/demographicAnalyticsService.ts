@@ -605,7 +605,10 @@ export class DemographicAnalyticsService {
     }>();
 
     currentKeywords.forEach(analysis => {
-      analysis.keywords.forEach(keyword => {
+      const keywords = typeof analysis.keywords === 'string' 
+        ? analysis.keywords.split(',').map(k => k.trim()).filter(k => k)
+        : analysis.keywords || [];
+      keywords.forEach(keyword => {
         if (!keywordMap.has(keyword)) {
           keywordMap.set(keyword, {
             count: 0,

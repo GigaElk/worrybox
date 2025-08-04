@@ -60,14 +60,17 @@ export class ModerationService {
   }
 
   /**
-   * AI-powered moderation (placeholder for OpenAI integration)
+   * AI-powered moderation (gracefully handles missing OpenAI)
    */
   private async performAIModeration(content: string): Promise<ModerationResult | null> {
-    // TODO: Integrate with OpenAI Moderation API
-    // For now, return null to indicate AI is not available
-    
-    if (process.env.OPENAI_API_KEY) {
-      // Placeholder for actual OpenAI integration
+    // Check if AI is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('🤖 AI moderation disabled - using rule-based moderation only');
+      return null; // Will fall back to rule-based moderation
+    }
+
+    try {
+      // TODO: Integrate with OpenAI Moderation API when available
       console.log('🤖 AI moderation would analyze:', content.substring(0, 50) + '...');
       
       // Simulate AI response structure
@@ -77,9 +80,10 @@ export class ModerationService {
         reasons: [],
         confidence: 0.95
       };
+    } catch (error) {
+      console.error('AI moderation failed:', error);
+      return null; // Will fall back to rule-based moderation
     }
-
-    return null; // AI not available
   }
 
   /**
@@ -183,7 +187,7 @@ export class ModerationService {
       await prisma.moderationQueue.update({
         where: { id: existingQueueItem.id },
         data: {
-          flaggedReasons: reasons || [],
+          flaggedReasons: reasons ? reasons.join(',') : null,
           updatedAt: new Date()
         }
       });
@@ -192,7 +196,7 @@ export class ModerationService {
       await prisma.moderationQueue.create({
         data: {
           commentId,
-          flaggedReasons: reasons || [],
+          flaggedReasons: reasons ? reasons.join(',') : null,
           status: 'pending'
         }
       });

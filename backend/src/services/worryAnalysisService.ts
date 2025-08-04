@@ -114,11 +114,17 @@ export class WorryAnalysisService {
   }
 
   /**
-   * AI-powered worry analysis (placeholder for OpenAI integration)
+   * AI-powered worry analysis (gracefully handles missing OpenAI)
    */
   private async performAIAnalysis(content: string, prompt: string): Promise<WorryAnalysisResult | null> {
-    // TODO: Integrate with OpenAI API for advanced analysis
-    if (process.env.OPENAI_API_KEY) {
+    // Check if AI is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('🤖 AI analysis disabled - using fallback analysis');
+      return this.getFallbackAnalysis(content);
+    }
+
+    try {
+      // TODO: Integrate with OpenAI API for advanced analysis when available
       console.log('🤖 AI worry analysis would analyze:', content.substring(0, 50) + '...');
       
       // Placeholder for actual OpenAI integration
@@ -133,9 +139,59 @@ export class WorryAnalysisService {
       };
       
       return mockAIResult;
+    } catch (error) {
+      console.error('AI analysis failed, using fallback:', error);
+      return this.getFallbackAnalysis(content);
+    }
+  }
+
+  /**
+   * Fallback analysis when AI is not available
+   */
+  private async getFallbackAnalysis(content: string): Promise<WorryAnalysisResult> {
+    // Simple keyword-based categorization
+    const categories = {
+      'Health & Wellness': ['health', 'sick', 'pain', 'tired', 'anxiety', 'stress', 'worried', 'depression'],
+      'Work & Career': ['work', 'job', 'career', 'boss', 'interview', 'promotion', 'salary', 'unemployed'],
+      'Relationships': ['relationship', 'family', 'friend', 'partner', 'love', 'breakup', 'marriage', 'dating'],
+      'Financial': ['money', 'debt', 'bills', 'budget', 'expensive', 'poor', 'rich', 'savings'],
+      'Education': ['school', 'study', 'exam', 'grade', 'college', 'university', 'homework', 'test'],
+      'Personal Growth': ['future', 'goals', 'dreams', 'change', 'improve', 'better', 'growth', 'development']
+    };
+
+    const lowerContent = content.toLowerCase();
+    let bestCategory = 'General';
+    let matchCount = 0;
+
+    // Find best matching category
+    for (const [category, keywords] of Object.entries(categories)) {
+      const matches = keywords.filter(keyword => lowerContent.includes(keyword)).length;
+      if (matches > matchCount) {
+        matchCount = matches;
+        bestCategory = category;
+      }
     }
 
-    return null; // AI not available
+    // Extract simple keywords (words longer than 3 characters)
+    const words = content.toLowerCase().match(/\b\w{4,}\b/g) || [];
+    const keywords = [...new Set(words)].slice(0, 5); // Top 5 unique keywords
+
+    // Simple sentiment based on negative/positive words
+    const negativeWords = ['worried', 'anxious', 'scared', 'sad', 'angry', 'frustrated', 'stressed'];
+    const positiveWords = ['happy', 'excited', 'grateful', 'hopeful', 'confident', 'proud'];
+    
+    const negativeCount = negativeWords.filter(word => lowerContent.includes(word)).length;
+    const positiveCount = positiveWords.filter(word => lowerContent.includes(word)).length;
+    const sentimentScore = (positiveCount - negativeCount) / Math.max(1, positiveCount + negativeCount);
+
+    return {
+      category: bestCategory,
+      subcategory: 'General',
+      sentimentScore: sentimentScore,
+      keywords: keywords,
+      similarWorryCount: await this.calculateSimilarWorryCount(bestCategory, keywords),
+      confidence: 0.6 // Lower confidence for fallback analysis
+    };
   }
 
   /**

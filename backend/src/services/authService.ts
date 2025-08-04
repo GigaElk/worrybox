@@ -71,8 +71,13 @@ export class AuthService {
     });
 
     // Send verification email (don't await to avoid blocking)
-    const verificationToken = generatePasswordResetToken(user.id);
-    sendVerificationEmail(user.email, verificationToken).catch(console.error);
+    if (process.env.EMAIL_HOST && process.env.EMAIL_USER) {
+      const verificationToken = generatePasswordResetToken(user.id);
+      sendVerificationEmail(user.email, verificationToken).catch(console.error);
+      console.log('📧 Verification email sent to:', user.email);
+    } else {
+      console.log('📧 Email disabled - verification email not sent');
+    }
 
     return {
       user: {
@@ -164,8 +169,13 @@ export class AuthService {
       return;
     }
 
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER) {
+      throw new Error('Email service not configured. Password reset unavailable.');
+    }
+
     const resetToken = generatePasswordResetToken(user.id);
     await sendPasswordResetEmail(user.email, resetToken);
+    console.log('📧 Password reset email sent to:', user.email);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
