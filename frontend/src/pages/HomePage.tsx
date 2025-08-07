@@ -171,7 +171,7 @@ const HomePage = () => {
           Ready to lighten your mental load?
         </h2>
         <p className="text-lg text-gray-600 mb-6">
-          Join thousands of people who have found peace of mind through Worrybox.
+          Join others who have found peace of mind through Worrybox.
         </p>
         <Link to="/register" className="btn-primary text-lg px-8 py-3">
           Start Your Journey
