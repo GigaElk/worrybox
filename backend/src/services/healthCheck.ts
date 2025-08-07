@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { DatabaseConnection } from '../utils/databaseConnection';
 import logger from './logger';
-
-const prisma = new PrismaClient();
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -82,6 +80,7 @@ export class HealthCheckService {
     
     try {
       // Simple database connectivity check
+      const prisma = await DatabaseConnection.getInstance();
       await prisma.$queryRaw`SELECT 1`;
       
       const responseTime = Date.now() - startTime;
