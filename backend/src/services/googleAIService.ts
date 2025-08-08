@@ -94,8 +94,16 @@ Respond with ONLY the JSON object, no additional text.`;
       const response = await result.response;
       const text = response.text();
 
+      // Clean the response text (remove markdown code blocks if present)
+      let cleanText = text.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
       // Parse the JSON response
-      const analysis = JSON.parse(text.trim());
+      const analysis = JSON.parse(cleanText.trim());
 
       // Validate the response structure
       if (!analysis.category || !Array.isArray(analysis.keywords)) {
