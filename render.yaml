@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: 10000
       - key: DISABLE_PAYMENTS
-        value: true
+        value: false
       - key: FRONTEND_URL
         value: https://worrybox-frontend.onrender.com
       # These need to be set manually in Render.com dashboard:
