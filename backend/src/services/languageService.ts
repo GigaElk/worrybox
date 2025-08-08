@@ -102,7 +102,7 @@ export class LanguageService {
       .sort((a, b) => b.quality - a.quality); // Sort by quality (preference)
 
     // Return the first supported language, or default to English
-    const supportedCodes = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    const supportedCodes = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko'];
     
     for (const lang of languages) {
       if (supportedCodes.includes(lang.code)) {
