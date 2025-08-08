@@ -122,6 +122,27 @@ app.use('/api', (req, res) => {
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Handle JSON parsing errors specifically
+  if (err instanceof SyntaxError && err.message.includes('JSON')) {
+    logger.error('JSON parsing error', {
+      error: err.message,
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+    
+    return res.status(400).json({
+      error: {
+        code: 'INVALID_JSON',
+        message: 'Invalid JSON format in request body'
+      },
+      timestamp: new Date().toISOString(),
+      path: req.path
+    });
+  }
+
+  // Handle all other errors
   logger.error('Unhandled error', {
     error: err.message,
     stack: err.stack,
