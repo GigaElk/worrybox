@@ -125,11 +125,21 @@ Frontend specific:
 - `npm run build` - Build frontend for production
 - `npm run test` - Run frontend tests
 
+## Documentation
+
+📚 **[Complete Documentation](docs/README.md)** - Find all project documentation organized by category in the `docs/` directory, including:
+
+- Deployment guides (Azure, Render, general)
+- Database migration guides  
+- Security setup and best practices
+- Testing documentation
+- Business feature implementations
+
 ## Contributing
 
 This project follows a spec-driven development approach. See the `.kiro/specs/worrybox/` directory for detailed requirements, design, and implementation tasks.
 
-📜 [Code of Conduct](CODE_OF_CONDUCT.md) — We’re committed to respectful and inclusive collaboration.
+📜 [Code of Conduct](docs/CODE_OF_CONDUCT.md) — We’re committed to respectful and inclusive collaboration.
 
 ## License
 
