@@ -122,10 +122,12 @@ model Subscription {
   userId                  String    @map("user_id")
   tier                    String    // 'free', 'supporter', 'premium'
   status                  String    // 'active', 'cancelled', 'expired', 'past_due', 'unpaid'
-  lemonSqueezyId          String?   @unique @map("lemonsqueezy_id") // LemonSqueezy subscription ID
-  lemonSqueezyCustomerId  String?   @map("lemonsqueezy_customer_id")
-  lemonSqueezyProductId   String?   @map("lemonsqueezy_product_id")
-  lemonSqueezyVariantId   String?   @map("lemonsqueezy_variant_id")
+  lemonSqueezyId          String?   @unique @map("lemonsqueezy_id") // LemonSqueezy subscription ID (deprecated)
+  lemonSqueezyCustomerId  String?   @map("lemonsqueezy_customer_id") // (deprecated)
+  lemonSqueezyProductId   String?   @map("lemonsqueezy_product_id") // (deprecated)
+  lemonSqueezyVariantId   String?   @map("lemonsqueezy_variant_id") // (deprecated)
+  paypalSubscriptionId    String?   @unique @map("paypal_subscription_id") // PayPal subscription ID
+  paypalPlanId            String?   @map("paypal_plan_id") // PayPal plan ID
   currentPeriodStart      DateTime? @map("current_period_start")
   currentPeriodEnd        DateTime? @map("current_period_end")
   trialEndsAt             DateTime? @map("trial_ends_at")
@@ -437,4 +439,21 @@ model ExerciseProgress {
   exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@map("exercise_progress")
+}
+
+model AIReprocessingQueue {
+  id          String    @id @default(uuid())
+  contentType String    @map("content_type") // 'comment', 'post', 'worry_analysis'
+  contentId   String?   @map("content_id") // Reference to the content that needs reprocessing
+  content     String    @db.NVarChar(Max) // The actual content to reprocess
+  reason      String    // 'rate_limit', 'service_unavailable', 'error'
+  status      String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  retryCount  Int       @default(0) @map("retry_count")
+  lastError   String?   @map("last_error")
+  result      String?   @db.NVarChar(Max) // JSON result from successful processing
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("ai_reprocessing_queue")
 }

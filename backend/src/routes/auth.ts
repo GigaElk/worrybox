@@ -17,6 +17,9 @@ router.get('/verify-email', authController.verifyEmail);
 router.post('/logout', authenticateToken, authController.logout);
 router.get('/profile', authenticateToken, authController.getProfile);
 
+// Debug routes
+router.get('/check-token', authController.checkToken);
+
 // Availability check routes (public)
 router.get('/check-email/:email', authController.checkEmailAvailability);
 router.get('/check-username/:username', authController.checkUsernameAvailability);

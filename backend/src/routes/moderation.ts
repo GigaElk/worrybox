@@ -9,6 +9,10 @@ const moderationController = new ModerationController();
 router.get('/queue', authenticateToken, getModerationQueueValidation, moderationController.getModerationQueue);
 router.post('/review/:queueItemId', authenticateToken, reviewCommentValidation, moderationController.reviewComment);
 router.get('/stats', authenticateToken, moderationController.getModerationStats);
-router.post('/moderate/:commentId', authenticateToken, moderationController.moderateComment);
+
+// AI Reprocessing endpoints
+router.post('/reprocess', authenticateToken, moderationController.reprocessPendingItems);
+router.get('/reprocessing-queue', authenticateToken, moderationController.getReprocessingQueueStatus);
+router.delete('/reprocessing-queue/cleanup', authenticateToken, moderationController.cleanupOldReprocessingItems);
 
 export default router;

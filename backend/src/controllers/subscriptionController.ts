@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { LemonSqueezyService } from '../services/lemonSqueezyService';
+import { PayPalService } from '../services/paypalService';
 
-const lemonSqueezyService = LemonSqueezyService.getInstance();
+const paypalService = PayPalService.getInstance();
 
 export class SubscriptionController {
   /**
@@ -9,7 +9,7 @@ export class SubscriptionController {
    */
   async getSubscriptionTiers(req: Request, res: Response) {
     try {
-      const tiers = lemonSqueezyService.getSubscriptionTiers();
+      const tiers = paypalService.getSubscriptionTiers();
       
       res.json({
         data: tiers,
@@ -43,7 +43,7 @@ export class SubscriptionController {
         });
       }
 
-      const subscription = await lemonSqueezyService.getUserSubscription(req.user.userId);
+      const subscription = await paypalService.getUserSubscription(req.user.userId);
       
       res.json({
         data: subscription,
@@ -62,7 +62,7 @@ export class SubscriptionController {
   }
 
   /**
-   * Create checkout URL for subscription upgrade
+   * Create PayPal subscription
    */
   async createCheckout(req: Request, res: Response) {
     try {
@@ -77,35 +77,32 @@ export class SubscriptionController {
         });
       }
 
-      const { variantId, customData } = req.body;
+      const { planId } = req.body;
 
-      if (!variantId) {
+      if (!planId) {
         return res.status(400).json({
           error: {
-            code: 'MISSING_VARIANT_ID',
-            message: 'Variant ID is required',
+            code: 'MISSING_PLAN_ID',
+            message: 'PayPal plan ID is required',
           },
           timestamp: new Date().toISOString(),
           path: req.path,
         });
       }
 
-      const checkoutUrl = await lemonSqueezyService.createCheckoutUrl(
-        req.user.userId,
-        variantId,
-        customData
-      );
+      const result = await paypalService.createSubscription(req.user.userId, planId);
 
       res.json({
         data: {
-          checkoutUrl,
+          subscriptionId: result.subscriptionId,
+          approvalUrl: result.approvalUrl,
         },
       });
     } catch (error: any) {
-      console.error('Failed to create checkout:', error);
+      console.error('Failed to create PayPal subscription:', error);
       res.status(500).json({
         error: {
-          code: 'CHECKOUT_CREATION_FAILED',
+          code: 'SUBSCRIPTION_CREATION_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -115,9 +112,9 @@ export class SubscriptionController {
   }
 
   /**
-   * Get customer portal URL for subscription management
+   * Cancel PayPal subscription
    */
-  async getCustomerPortal(req: Request, res: Response) {
+  async cancelSubscription(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(401).json({
@@ -130,9 +127,9 @@ export class SubscriptionController {
         });
       }
 
-      const subscription = await lemonSqueezyService.getUserSubscription(req.user.userId);
+      const subscription = await paypalService.getUserSubscription(req.user.userId);
       
-      if (!subscription || !subscription.lemonSqueezyId) {
+      if (!subscription || !subscription.paypalSubscriptionId) {
         return res.status(404).json({
           error: {
             code: 'NO_SUBSCRIPTION',
@@ -143,18 +140,20 @@ export class SubscriptionController {
         });
       }
 
-      const portalUrl = await lemonSqueezyService.getCustomerPortalUrl(subscription.lemonSqueezyId);
+      const { reason } = req.body;
+      await paypalService.cancelSubscription(
+        subscription.paypalSubscriptionId, 
+        reason || 'User requested cancellation'
+      );
 
       res.json({
-        data: {
-          portalUrl,
-        },
+        message: 'Subscription cancelled successfully',
       });
     } catch (error: any) {
-      console.error('Failed to get customer portal:', error);
+      console.error('Failed to cancel subscription:', error);
       res.status(500).json({
         error: {
-          code: 'PORTAL_FETCH_FAILED',
+          code: 'CANCELLATION_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -192,7 +191,7 @@ export class SubscriptionController {
         });
       }
 
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, feature);
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, feature);
 
       res.json({
         data: {
@@ -214,16 +213,17 @@ export class SubscriptionController {
   }
 
   /**
-   * Handle LemonSqueezy webhooks
+   * Handle PayPal webhooks
    */
   async handleWebhook(req: Request, res: Response) {
     try {
-      const signature = req.headers['x-signature'] as string;
+      const headers = req.headers as Record<string, string>;
       const payload = JSON.stringify(req.body);
 
       // Verify webhook signature
-      if (!lemonSqueezyService.verifyWebhookSignature(payload, signature)) {
-        console.error('Invalid webhook signature');
+      const isValid = await paypalService.verifyWebhookSignature(headers, payload);
+      if (!isValid) {
+        console.error('Invalid PayPal webhook signature');
         return res.status(401).json({
           error: {
             code: 'INVALID_SIGNATURE',
@@ -233,11 +233,11 @@ export class SubscriptionController {
       }
 
       // Process the webhook
-      await lemonSqueezyService.handleWebhook(req.body);
+      await paypalService.handleWebhook(req.body);
 
       res.json({ received: true });
     } catch (error: any) {
-      console.error('Failed to handle webhook:', error);
+      console.error('Failed to handle PayPal webhook:', error);
       res.status(500).json({
         error: {
           code: 'WEBHOOK_PROCESSING_FAILED',
@@ -265,7 +265,7 @@ export class SubscriptionController {
         });
       }
 
-      const trialStatus = await lemonSqueezyService.getTrialStatus(req.user.userId);
+      const trialStatus = await paypalService.getTrialStatus(req.user.userId);
       
       res.json({
         data: trialStatus,

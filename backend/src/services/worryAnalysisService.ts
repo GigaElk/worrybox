@@ -97,6 +97,8 @@ export class WorryAnalysisService {
    * Analyze a worry post using AI or fallback to rule-based analysis
    */
   async analyzeWorry(postId: string, content: string, prompt: string): Promise<WorryAnalysisResult> {
+    let aiFailedDueToRateLimit = false;
+    
     try {
       // Try AI analysis first
       const aiResult = await this.performAIAnalysis(content, prompt);
@@ -107,11 +109,22 @@ export class WorryAnalysisService {
       }
     } catch (error) {
       console.warn('AI worry analysis failed, falling back to rule-based:', error);
+      
+      // Check if it's a rate limit error
+      if ((error as any).message?.includes('quota') || (error as any).message?.includes('rate limit')) {
+        aiFailedDueToRateLimit = true;
+      }
     }
 
     // Fallback to rule-based analysis
     const fallbackResult = await this.performRuleBasedAnalysis(content, prompt);
     await this.saveAnalysis(postId, fallbackResult);
+    
+    // If AI failed due to rate limits, mark for reprocessing
+    if (aiFailedDueToRateLimit) {
+      await this.markForReprocessing(postId, content, prompt, 'rate_limit');
+    }
+    
     return fallbackResult;
   }
 
@@ -160,6 +173,13 @@ export class WorryAnalysisService {
       return result;
     } catch (error) {
       console.error('❌ Google AI analysis failed, using fallback:', error);
+      
+      // Check if it's a rate limit error and mark for reprocessing
+      if ((error as any).message?.includes('quota') || (error as any).message?.includes('rate limit')) {
+        console.warn('🚫 Google AI rate limit reached - marking for reprocessing');
+        // We'll mark for reprocessing in the main analyzeWorry method since we need postId
+      }
+      
       return this.getFallbackAnalysis(content);
     }
   }
@@ -552,5 +572,156 @@ export class WorryAnalysisService {
     } catch (error) {
       console.error('Failed to update similar worry counts:', error);
     }
+  }
+
+  /**
+   * Mark worry analysis for reprocessing when AI is unavailable
+   */
+  private async markForReprocessing(postId: string, content: string, prompt: string, reason: string): Promise<void> {
+    try {
+      await prisma.aIReprocessingQueue.create({
+        data: {
+          contentType: 'worry_analysis',
+          contentId: postId,
+          content: `${content} | ${prompt}`,
+          reason,
+          status: 'pending',
+          retryCount: 0
+        }
+      });
+      console.log('📝 Worry analysis marked for reprocessing:', { postId, reason });
+    } catch (error) {
+      console.error('❌ Failed to mark worry analysis for reprocessing:', error);
+    }
+  }
+
+  /**
+   * Reprocess pending worry analyses when AI becomes available
+   */
+  async reprocessPendingWorryAnalyses(batchSize = 5): Promise<{ processed: number; failed: number }> {
+    const googleAI = GoogleAIService.getInstance();
+    
+    if (!googleAI.isAvailable()) {
+      console.warn('🤖 Google AI still not available for worry analysis reprocessing');
+      return { processed: 0, failed: 0 };
+    }
+
+    console.log('🔄 Starting worry analysis reprocessing batch...');
+
+    const pendingItems = await prisma.aIReprocessingQueue.findMany({
+      where: {
+        status: 'pending',
+        contentType: 'worry_analysis'
+      },
+      orderBy: {
+        createdAt: 'asc'
+      },
+      take: batchSize
+    });
+
+    if (pendingItems.length === 0) {
+      console.log('✅ No pending worry analyses to reprocess');
+      return { processed: 0, failed: 0 };
+    }
+
+    let processed = 0;
+    let failed = 0;
+
+    for (const item of pendingItems) {
+      try {
+        if (!item.contentId) {
+          throw new Error('Missing contentId for worry analysis reprocessing');
+        }
+
+        // Parse content and prompt
+        const [content, prompt] = item.content.split(' | ');
+        
+        // Reprocess with AI
+        const aiResult = await googleAI.analyzeWorryContent(content, prompt);
+        
+        if (aiResult) {
+          // Calculate similar worry count
+          const similarWorryCount = await this.calculateSimilarWorryCount(
+            aiResult.category, 
+            aiResult.keywords
+          );
+
+          // Update the worry analysis
+          await prisma.worryAnalysis.upsert({
+            where: { postId: item.contentId },
+            update: {
+              category: aiResult.category,
+              subcategory: aiResult.subcategory,
+              sentimentScore: aiResult.sentimentScore,
+              keywords: arrayToString(aiResult.keywords),
+              similarWorryCount,
+              analysisVersion: '1.0',
+              updatedAt: new Date()
+            },
+            create: {
+              postId: item.contentId,
+              category: aiResult.category,
+              subcategory: aiResult.subcategory,
+              sentimentScore: aiResult.sentimentScore,
+              keywords: arrayToString(aiResult.keywords),
+              similarWorryCount,
+              analysisVersion: '1.0'
+            }
+          });
+
+          // Mark as completed
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              status: 'completed', 
+              processedAt: new Date(),
+              result: JSON.stringify(aiResult)
+            }
+          });
+
+          processed++;
+          console.log('✅ Reprocessed worry analysis:', { postId: item.contentId, category: aiResult.category });
+        } else {
+          throw new Error('AI returned null result');
+        }
+
+      } catch (error: any) {
+        console.error('❌ Failed to reprocess worry analysis:', { itemId: item.id, error: error.message });
+        
+        // Increment retry count
+        const newRetryCount = item.retryCount + 1;
+        const maxRetries = 3;
+
+        if (newRetryCount >= maxRetries) {
+          // Mark as failed after max retries
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              status: 'failed', 
+              retryCount: newRetryCount,
+              lastError: error.message,
+              processedAt: new Date()
+            }
+          });
+        } else {
+          // Increment retry count for next attempt
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              retryCount: newRetryCount,
+              lastError: error.message
+            }
+          });
+        }
+
+        failed++;
+      }
+
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    console.log('🔄 Worry analysis reprocessing batch completed:', { processed, failed, total: pendingItems.length });
+    return { processed, failed };
   }
 }

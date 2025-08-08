@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+// const rateLimit = require('express-rate-limit'); // Temporarily disabled
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -28,19 +28,8 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting - disabled in development for testing
-if (process.env.NODE_ENV === 'production') {
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests in production
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use('/api', limiter);
-} else {
-  console.log('🔓 Rate limiting disabled in development mode');
-}
+// Rate limiting - temporarily disabled due to dependency issues
+console.log('🔓 Rate limiting disabled for now');
 
 // HTTP request logging
 app.use(morgan('combined', { stream: morganStream }));
@@ -98,6 +87,7 @@ import dashboardRoutes from './routes/dashboard';
 import statusRoutes from './routes/status';
 import { SchedulingService } from './services/schedulingService';
 import { NotificationScheduler } from './services/notificationScheduler';
+import { AIReprocessingService } from './services/aiReprocessingService';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -166,6 +156,11 @@ app.listen(PORT, () => {
   const notificationScheduler = NotificationScheduler.getInstance();
   notificationScheduler.startScheduler();
   logger.info('🔔 Notification scheduler started');
+  
+  // Start the AI reprocessing scheduler
+  const aiReprocessingService = AIReprocessingService.getInstance();
+  aiReprocessingService.startScheduler();
+  logger.info('🤖 AI reprocessing scheduler started');
 });
 
 // Graceful shutdown handling

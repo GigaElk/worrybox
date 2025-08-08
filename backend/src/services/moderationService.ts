@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { stringToArrayOrUndefined } from '../utils/arrayHelpers';
+import { GoogleAIService } from './googleAIService';
+import logger from './logger';
 
 const prisma = new PrismaClient();
 
@@ -43,6 +45,153 @@ export interface ModerationQueueItem {
 
 export class ModerationService {
   /**
+   * Mark content for reprocessing when AI is unavailable
+   */
+  private async markForReprocessing(content: string, reason: string): Promise<void> {
+    try {
+      await prisma.aIReprocessingQueue.create({
+        data: {
+          contentType: 'comment',
+          content,
+          reason,
+          status: 'pending',
+          retryCount: 0
+        }
+      });
+      logger.info('📝 Content marked for AI reprocessing:', { reason, contentLength: content.length });
+    } catch (error) {
+      logger.error('❌ Failed to mark content for reprocessing:', error);
+    }
+  }
+
+  /**
+   * Reprocess pending items when AI becomes available again
+   */
+  async reprocessPendingItems(batchSize = 10): Promise<{ processed: number; failed: number }> {
+    const googleAI = GoogleAIService.getInstance();
+    
+    if (!googleAI.isAvailable()) {
+      logger.warn('🤖 Google AI still not available for reprocessing');
+      return { processed: 0, failed: 0 };
+    }
+
+    logger.info('🔄 Starting AI reprocessing batch...');
+
+    const pendingItems = await prisma.aIReprocessingQueue.findMany({
+      where: {
+        status: 'pending',
+        contentType: 'comment'
+      },
+      orderBy: {
+        createdAt: 'asc'
+      },
+      take: batchSize
+    });
+
+    if (pendingItems.length === 0) {
+      logger.info('✅ No pending items to reprocess');
+      return { processed: 0, failed: 0 };
+    }
+
+    let processed = 0;
+    let failed = 0;
+
+    for (const item of pendingItems) {
+      try {
+        // Find the comment that needs reprocessing
+        const comment = await prisma.comment.findFirst({
+          where: {
+            content: item.content,
+            moderationStatus: { in: ['pending', 'flagged'] }
+          }
+        });
+
+        if (!comment) {
+          // Comment might have been deleted or already processed
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { status: 'completed', processedAt: new Date() }
+          });
+          processed++;
+          continue;
+        }
+
+        // Reprocess with AI
+        const aiResult = await googleAI.moderateContent(item.content);
+        
+        if (aiResult) {
+          // Update comment with AI results
+          let status: 'approved' | 'flagged' | 'rejected';
+          
+          if (!aiResult.isSafe) {
+            status = aiResult.confidence > 0.8 ? 'rejected' : 'flagged';
+          } else {
+            status = 'approved';
+          }
+
+          await this.updateCommentModerationStatus(
+            comment.id,
+            status,
+            aiResult.isSafe ? 0.1 : 0.8,
+            aiResult.reason ? [aiResult.reason] : undefined
+          );
+
+          // Mark as completed
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              status: 'completed', 
+              processedAt: new Date(),
+              result: JSON.stringify(aiResult)
+            }
+          });
+
+          processed++;
+          logger.info('✅ Reprocessed comment:', { commentId: comment.id, status });
+        } else {
+          throw new Error('AI returned null result');
+        }
+
+      } catch (error: any) {
+        logger.error('❌ Failed to reprocess item:', { itemId: item.id, error: error.message });
+        
+        // Increment retry count
+        const newRetryCount = item.retryCount + 1;
+        const maxRetries = 3;
+
+        if (newRetryCount >= maxRetries) {
+          // Mark as failed after max retries
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              status: 'failed', 
+              retryCount: newRetryCount,
+              lastError: error.message,
+              processedAt: new Date()
+            }
+          });
+        } else {
+          // Increment retry count for next attempt
+          await prisma.aIReprocessingQueue.update({
+            where: { id: item.id },
+            data: { 
+              retryCount: newRetryCount,
+              lastError: error.message
+            }
+          });
+        }
+
+        failed++;
+      }
+
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    logger.info('🔄 Reprocessing batch completed:', { processed, failed, total: pendingItems.length });
+    return { processed, failed };
+  }
+  /**
    * Moderate a comment using AI analysis (with fallback to rule-based)
    */
   async moderateComment(commentId: string, content: string): Promise<ModerationResult> {
@@ -61,28 +210,63 @@ export class ModerationService {
   }
 
   /**
-   * AI-powered moderation (gracefully handles missing OpenAI)
+   * AI-powered moderation using Google AI (gracefully handles rate limits)
    */
   private async performAIModeration(content: string): Promise<ModerationResult | null> {
-    // Check if AI is available
-    if (!process.env.OPENAI_API_KEY) {
-      console.log('🤖 AI moderation disabled - using rule-based moderation only');
+    const googleAI = GoogleAIService.getInstance();
+    
+    if (!googleAI.isAvailable()) {
+      logger.info('🤖 Google AI not available - using rule-based moderation');
       return null; // Will fall back to rule-based moderation
     }
 
     try {
-      // TODO: Integrate with OpenAI Moderation API when available
-      console.log('🤖 AI moderation would analyze:', content.substring(0, 50) + '...');
+      logger.info('🤖 Moderating comment with Google AI:', content.substring(0, 50) + '...');
       
-      // Simulate AI response structure
-      return {
-        status: 'approved',
-        score: 0.1,
-        reasons: [],
-        confidence: 0.95
+      const aiResult = await googleAI.moderateContent(content);
+      
+      if (!aiResult) {
+        logger.warn('🤖 Google AI moderation returned null - using fallback');
+        return null;
+      }
+
+      // Convert Google AI result to our ModerationResult format
+      let status: 'approved' | 'flagged' | 'rejected';
+      
+      if (!aiResult.isSafe) {
+        // If AI says it's unsafe, determine severity
+        if (aiResult.confidence > 0.8) {
+          status = 'rejected'; // High confidence it's unsafe
+        } else {
+          status = 'flagged'; // Lower confidence, flag for review
+        }
+      } else {
+        status = 'approved';
+      }
+
+      const result: ModerationResult = {
+        status,
+        score: aiResult.isSafe ? 0.1 : 0.8,
+        reasons: aiResult.reason ? [aiResult.reason] : undefined,
+        confidence: aiResult.confidence
       };
+
+      logger.info('✅ Google AI moderation completed:', {
+        status: result.status,
+        score: result.score,
+        confidence: result.confidence
+      });
+
+      return result;
     } catch (error) {
-      console.error('AI moderation failed:', error);
+      logger.error('❌ Google AI moderation failed:', error);
+      
+      // Check if it's a rate limit error
+      if ((error as any).message?.includes('quota') || (error as any).message?.includes('rate limit')) {
+        logger.warn('🚫 Google AI rate limit reached - marking for reprocessing');
+        await this.markForReprocessing(content, 'rate_limit');
+      }
+      
       return null; // Will fall back to rule-based moderation
     }
   }
@@ -368,5 +552,64 @@ export class ModerationService {
       rejectedComments,
       averageModerationScore: avgScoreResult._avg.moderationScore?.toNumber() || 0
     };
+  }
+
+  /**
+   * Get reprocessing queue statistics
+   */
+  async getReprocessingQueueStats(): Promise<{
+    totalPending: number;
+    totalProcessing: number;
+    totalCompleted: number;
+    totalFailed: number;
+    oldestPending?: string;
+    recentlyCompleted: number;
+  }> {
+    try {
+      const [
+        totalPending,
+        totalProcessing,
+        totalCompleted,
+        totalFailed,
+        oldestPendingItem,
+        recentlyCompleted
+      ] = await Promise.all([
+        prisma.aIReprocessingQueue.count({ where: { status: 'pending' } }),
+        prisma.aIReprocessingQueue.count({ where: { status: 'processing' } }),
+        prisma.aIReprocessingQueue.count({ where: { status: 'completed' } }),
+        prisma.aIReprocessingQueue.count({ where: { status: 'failed' } }),
+        prisma.aIReprocessingQueue.findFirst({
+          where: { status: 'pending' },
+          orderBy: { createdAt: 'asc' },
+          select: { createdAt: true }
+        }),
+        prisma.aIReprocessingQueue.count({
+          where: {
+            status: 'completed',
+            processedAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+            }
+          }
+        })
+      ]);
+
+      return {
+        totalPending,
+        totalProcessing,
+        totalCompleted,
+        totalFailed,
+        oldestPending: oldestPendingItem?.createdAt.toISOString(),
+        recentlyCompleted
+      };
+    } catch (error) {
+      logger.error('❌ Failed to get reprocessing queue stats:', error);
+      return {
+        totalPending: 0,
+        totalProcessing: 0,
+        totalCompleted: 0,
+        totalFailed: 0,
+        recentlyCompleted: 0
+      };
+    }
   }
 }

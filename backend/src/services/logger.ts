@@ -47,28 +47,25 @@ const fileLogFormat = winston.format.combine(
 // Define transports
 const transports = [
   // Console transport for development
-  new winston.transports.Console({
-    format: logFormat,
-  }),
+  new winston.transports.Console(),
   
   // File transport for all logs
   new winston.transports.File({
     filename: path.join(process.cwd(), 'logs', 'all.log'),
-    format: fileLogFormat,
   }),
   
-  // File transport for error logs
-  new winston.transports.File({
-    filename: path.join(process.cwd(), 'logs', 'error.log'),
-    level: 'error',
-    format: fileLogFormat,
-  }),
+
 ];
 
 // Create the logger
 const logger = winston.createLogger({
   level: level(),
   levels,
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
   transports,
   // Don't exit on handled exceptions
   exitOnError: false,

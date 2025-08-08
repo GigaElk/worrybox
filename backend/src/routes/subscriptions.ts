@@ -12,7 +12,7 @@ router.get('/tiers', subscriptionController.getSubscriptionTiers);
 router.get('/current', authenticateToken, subscriptionController.getUserSubscription);
 router.get('/trial-status', authenticateToken, subscriptionController.getTrialStatus);
 router.post('/checkout', authenticateToken, subscriptionController.createCheckout);
-router.get('/portal', authenticateToken, subscriptionController.getCustomerPortal);
+router.post('/cancel', authenticateToken, subscriptionController.cancelSubscription);
 router.get('/features/:feature/access', authenticateToken, subscriptionController.checkFeatureAccess);
 
 // Webhook route (no authentication needed, verified by signature)

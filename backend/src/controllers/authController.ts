@@ -266,6 +266,48 @@ export class AuthController {
     });
   }
 
+  async checkToken(req: Request, res: Response) {
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({
+          error: {
+            code: 'NO_TOKEN',
+            message: 'No token provided',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const { verifyToken } = await import('../utils/jwt');
+      const decoded = verifyToken(token);
+
+      res.json({
+        message: 'Token is valid',
+        data: {
+          userId: decoded.userId,
+          email: decoded.email,
+          username: decoded.username,
+          issuedAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : 'unknown',
+          expiresAt: decoded.exp ? new Date(decoded.exp * 1000).toISOString() : 'unknown',
+          timeUntilExpiry: decoded.exp ? Math.max(0, decoded.exp * 1000 - Date.now()) : 0,
+        },
+      });
+    } catch (error: any) {
+      res.status(401).json({
+        error: {
+          code: 'INVALID_TOKEN',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
   async getProfile(req: Request, res: Response) {
     try {
       if (!req.user) {
