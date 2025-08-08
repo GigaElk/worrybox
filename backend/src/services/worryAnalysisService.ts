@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { stringToArray, arrayToString } from '../utils/arrayHelpers';
+import { GoogleAIService } from './googleAIService';
 
 const prisma = new PrismaClient();
 
@@ -115,33 +116,50 @@ export class WorryAnalysisService {
   }
 
   /**
-   * AI-powered worry analysis (gracefully handles missing OpenAI)
+   * AI-powered worry analysis using Google AI (Gemini)
    */
   private async performAIAnalysis(content: string, prompt: string): Promise<WorryAnalysisResult | null> {
-    // Check if AI is available
-    if (!process.env.OPENAI_API_KEY) {
-      console.log('🤖 AI analysis disabled - using fallback analysis');
+    const googleAI = GoogleAIService.getInstance();
+    
+    if (!googleAI.isAvailable()) {
+      console.log('🤖 Google AI not available - using fallback analysis');
       return this.getFallbackAnalysis(content);
     }
 
     try {
-      // TODO: Integrate with OpenAI API for advanced analysis when available
-      console.log('🤖 AI worry analysis would analyze:', content.substring(0, 50) + '...');
+      console.log('🤖 Analyzing worry with Google AI:', content.substring(0, 50) + '...');
       
-      // Placeholder for actual OpenAI integration
-      // This would use GPT to categorize worries, extract keywords, and analyze sentiment
-      const mockAIResult: WorryAnalysisResult = {
-        category: 'Health & Wellness',
-        subcategory: 'Mental Health',
-        sentimentScore: -0.3,
-        keywords: ['anxiety', 'stress', 'worried'],
-        similarWorryCount: await this.calculateSimilarWorryCount('Health & Wellness', ['anxiety', 'stress']),
-        confidence: 0.95
+      const aiResult = await googleAI.analyzeWorryContent(content, prompt);
+      
+      if (!aiResult) {
+        console.log('🤖 Google AI analysis failed - using fallback');
+        return this.getFallbackAnalysis(content);
+      }
+
+      // Calculate similar worry count based on AI categorization
+      const similarWorryCount = await this.calculateSimilarWorryCount(
+        aiResult.category, 
+        aiResult.keywords
+      );
+
+      const result: WorryAnalysisResult = {
+        category: aiResult.category,
+        subcategory: aiResult.subcategory,
+        sentimentScore: aiResult.sentimentScore,
+        keywords: aiResult.keywords,
+        similarWorryCount,
+        confidence: aiResult.confidence
       };
       
-      return mockAIResult;
+      console.log('✅ Google AI analysis completed:', {
+        category: result.category,
+        similarCount: similarWorryCount,
+        confidence: result.confidence
+      });
+      
+      return result;
     } catch (error) {
-      console.error('AI analysis failed, using fallback:', error);
+      console.error('❌ Google AI analysis failed, using fallback:', error);
       return this.getFallbackAnalysis(content);
     }
   }
