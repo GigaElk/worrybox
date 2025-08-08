@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { AnalyticsService } from '../services/analyticsService';
-import { LemonSqueezyService } from '../services/lemonSqueezyService';
+import { PayPalService } from '../services/paypalService';
 
 const analyticsService = AnalyticsService.getInstance();
-const lemonSqueezyService = LemonSqueezyService.getInstance();
+const paypalService = PayPalService.getInstance();
 
 export class AnalyticsController {
   /**
@@ -23,7 +23,7 @@ export class AnalyticsController {
       }
 
       // Check if user has access to personal analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -86,7 +86,7 @@ export class AnalyticsController {
       }
 
       // Check if user has access to personal analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -149,7 +149,7 @@ export class AnalyticsController {
       }
 
       // Check if user has access to personal analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -212,7 +212,7 @@ export class AnalyticsController {
       }
 
       // Check if user has access to personal analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { DemographicAnalyticsService } from '../services/demographicAnalyticsService';
-import { LemonSqueezyService } from '../services/lemonSqueezyService';
+import { PayPalService } from '../services/paypalService';
 
 const demographicAnalyticsService = DemographicAnalyticsService.getInstance();
-const lemonSqueezyService = LemonSqueezyService.getInstance();
+const paypalService = PayPalService.getInstance();
 
 export class DemographicAnalyticsController {
   /**
@@ -23,7 +23,7 @@ export class DemographicAnalyticsController {
       }
 
       // Check if user has access to demographic analytics (Premium feature)
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -87,7 +87,7 @@ export class DemographicAnalyticsController {
       }
 
       // Check if user has access to demographic analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -150,7 +150,7 @@ export class DemographicAnalyticsController {
       }
 
       // Check if user has access to demographic analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -213,7 +213,7 @@ export class DemographicAnalyticsController {
       }
 
       // Check if user has access to demographic analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
@@ -267,7 +267,7 @@ export class DemographicAnalyticsController {
       }
 
       // Check if user has access to demographic analytics
-      const hasAccess = await lemonSqueezyService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
