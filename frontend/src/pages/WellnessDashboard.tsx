@@ -174,7 +174,6 @@ const WellnessDashboard: React.FC = () => {
               </Link>
             </div>
           )}
-            </div>
           </div>
         </FeatureGate>
 
