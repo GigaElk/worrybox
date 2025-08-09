@@ -150,7 +150,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
               Upgrade to Premium
             </a>
             <p className="text-sm text-gray-500">
-              Starting at $9.99/month • Cancel anytime
+              Starting at $5/month • Cancel anytime
             </p>
           </div>
         </div>

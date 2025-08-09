@@ -44,8 +44,8 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         // Fallback tiers if API is unavailable
         setTiers([
           { id: 'free', name: 'Free', price: 0, features: ['Basic features'] },
-          { id: 'supporter', name: 'Supporter', price: 4.99, features: ['All Free features', 'Premium support'] },
-          { id: 'premium', name: 'Premium', price: 9.99, features: ['All Supporter features', 'Advanced analytics', 'Priority support'] }
+          { id: 'supporter', name: 'Supporter', price: 5, features: ['All Free features', 'Premium support'] },
+          { id: 'premium', name: 'Premium', price: 12, features: ['All Supporter features', 'Advanced analytics', 'Priority support'] }
         ])
       }
 

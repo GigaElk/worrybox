@@ -251,11 +251,13 @@ const SettingsPage: React.FC = () => {
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">
                   {subscription?.tier === 'free' ? 'Free' : 
-                   subscription?.tier === 'supporter' ? '$4.99/month' : 
-                   subscription?.tier === 'premium' ? '$9.99/month' : 'Free'}
+                   subscription?.tier === 'supporter' ? '$5/month' : 
+                   subscription?.tier === 'premium' ? '$12/month' : 'Free'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {subscription?.status || 'Active'}
+                  {subscription?.trialEndsAt && new Date() < new Date(subscription.trialEndsAt) 
+                    ? `Free Trial - ${Math.ceil((new Date(subscription.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining`
+                    : subscription?.status || 'Active'}
                 </p>
               </div>
             </div>
