@@ -25,6 +25,8 @@ import CopingTechniqueDetail from './components/CopingTechniqueDetail'
 import ResolutionStoriesPage from './pages/ResolutionStoriesPage'
 import ResourcesPage from './pages/ResourcesPage'
 import NotificationsPage from './pages/NotificationsPage'
+import SettingsPage from './pages/SettingsPage'
+import CommunityPage from './pages/CommunityPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 
@@ -72,6 +74,8 @@ function App() {
               <Route path="resolution-stories" element={<ResolutionStoriesPage />} />
               <Route path="resources" element={<ResourcesPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="community" element={<CommunityPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
