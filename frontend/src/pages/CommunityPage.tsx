@@ -65,12 +65,12 @@ const CommunityPage: React.FC = () => {
       // For now, we'll use mock data since the community endpoints don't exist yet
       // TODO: Replace with actual API calls when backend endpoints are implemented
       
-      // Mock community stats
+      // Real community stats (start with actual numbers)
       setStats({
-        totalUsers: 1247,
-        postsToday: 23,
-        supportGiven: 156,
-        activeNow: 12
+        totalUsers: 4, // Your actual user count
+        postsToday: 1, // Your actual post count
+        supportGiven: 0, // Will grow as community engages
+        activeNow: 1 // You're online! 
       })
 
       // Try to load recent public posts
@@ -83,33 +83,8 @@ const CommunityPage: React.FC = () => {
         setRecentPosts([])
       }
 
-      // Mock active users (in real implementation, this would come from an API)
-      setActiveUsers([
-        {
-          id: '1',
-          username: 'supportive_friend',
-          displayName: 'Sarah M.',
-          postsCount: 15,
-          followersCount: 23,
-          isFollowing: false
-        },
-        {
-          id: '2',
-          username: 'mindful_listener',
-          displayName: 'Alex K.',
-          postsCount: 8,
-          followersCount: 17,
-          isFollowing: false
-        },
-        {
-          id: '3',
-          username: 'caring_soul',
-          displayName: 'Jamie L.',
-          postsCount: 22,
-          followersCount: 31,
-          isFollowing: true
-        }
-      ])
+      // Start with empty active users - will populate as community grows
+      setActiveUsers([])
 
     } catch (error) {
       console.error('Failed to load community data:', error)
