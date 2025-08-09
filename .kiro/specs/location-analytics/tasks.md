@@ -59,7 +59,6 @@
 
 - [x] 4. Premium analytics dashboard
 
-
   - [ ] 4.1 Create geographic analytics API endpoints
 
     - Build REST endpoints for premium geographic data access
