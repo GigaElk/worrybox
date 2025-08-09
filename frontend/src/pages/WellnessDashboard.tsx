@@ -98,14 +98,14 @@ const WellnessDashboard: React.FC = () => {
         <FeatureGate feature="guided_exercises">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Recommended for You</h2>
-            <Link 
-              to="/wellness/exercises" 
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              View All Exercises
-            </Link>
-          </div>
+              <h2 className="text-2xl font-semibold text-gray-900">Recommended for You</h2>
+              <Link 
+                to="/wellness/exercises" 
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                View All Exercises
+              </Link>
+            </div>
           
           {isLoadingRecommendations ? (
             <div className="flex justify-center items-center py-8">
@@ -174,6 +174,7 @@ const WellnessDashboard: React.FC = () => {
               </Link>
             </div>
           )}
+            </div>
           </div>
         </FeatureGate>
 
