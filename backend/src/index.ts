@@ -116,6 +116,7 @@ import languagesRoutes from './routes/languages';
 import dashboardRoutes from './routes/dashboard';
 import statusRoutes from './routes/status';
 import wellnessRoutes from './routes/wellness';
+import adminRoutes from './routes/admin';
 import { SchedulingService } from './services/schedulingService';
 import { NotificationScheduler } from './services/notificationScheduler';
 import { AIReprocessingService } from './services/aiReprocessingService';
@@ -140,6 +141,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/languages', languagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
