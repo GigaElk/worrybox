@@ -97,7 +97,7 @@ const WellnessDashboard: React.FC = () => {
         {/* Personalized Recommendations - Premium Feature */}
         <FeatureGate feature="guided_exercises">
           <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-gray-900">Recommended for You</h2>
             <Link 
               to="/wellness/exercises" 
@@ -174,6 +174,7 @@ const WellnessDashboard: React.FC = () => {
               </Link>
             </div>
           )}
+            </div>
           </div>
         </FeatureGate>
 
