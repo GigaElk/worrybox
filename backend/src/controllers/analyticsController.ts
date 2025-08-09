@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { query, validationResult } from 'express-validator';
 import { GeographicAnalyticsService, GeographicAnalyticsQuery } from '../services/geographicAnalyticsService';
-import { paypalService } from '../services/paypalService';
+import { PayPalService } from '../services/paypalService';
+
+const paypalService = PayPalService.getInstance();
 
 const analyticsService = new GeographicAnalyticsService();
 

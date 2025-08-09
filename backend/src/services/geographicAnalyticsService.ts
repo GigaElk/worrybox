@@ -100,7 +100,7 @@ export class GeographicAnalyticsService {
       totalPosts: parseInt(summary.totalPosts),
       averageSentiment: parseFloat(summary.averageSentiment) || 0,
       topCategories: summary.categories ? 
-        [...new Set(summary.categories.split(','))].slice(0, 5) : []
+        [...new Set(summary.categories.split(','))].slice(0, 5) as string[] : []
     }));
   }
 
