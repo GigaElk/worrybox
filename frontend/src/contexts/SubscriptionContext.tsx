@@ -35,14 +35,30 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       setIsLoading(true)
       setError(null)
 
-      // Load subscription tiers (always available)
-      const tiersData = await subscriptionService.getSubscriptionTiers()
-      setTiers(tiersData)
+      // Load subscription tiers (always available) - with retry logic
+      try {
+        const tiersData = await subscriptionService.getSubscriptionTiers()
+        setTiers(tiersData)
+      } catch (tiersError: any) {
+        console.warn('Failed to load subscription tiers, using fallback:', tiersError)
+        // Fallback tiers if API is unavailable
+        setTiers([
+          { id: 'free', name: 'Free', price: 0, features: ['Basic features'] },
+          { id: 'supporter', name: 'Supporter', price: 4.99, features: ['All Free features', 'Premium support'] },
+          { id: 'premium', name: 'Premium', price: 9.99, features: ['All Supporter features', 'Advanced analytics', 'Priority support'] }
+        ])
+      }
 
       // Load user subscription if authenticated
       if (user) {
-        const subscriptionData = await subscriptionService.getCurrentSubscription()
-        setSubscription(subscriptionData)
+        try {
+          const subscriptionData = await subscriptionService.getCurrentSubscription()
+          setSubscription(subscriptionData)
+        } catch (subError: any) {
+          console.warn('Failed to load user subscription:', subError)
+          // Don't block login for subscription loading failures
+          setSubscription(null)
+        }
       } else {
         setSubscription(null)
       }

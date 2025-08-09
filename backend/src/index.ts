@@ -24,7 +24,12 @@ const PORT = process.env.PORT || 5000;
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://worrybox.gigaelk.com',
+    'http://localhost:3000',
+    'http://localhost:5173', // Vite dev server
+  ],
   credentials: true,
 }));
 
@@ -63,6 +68,31 @@ app.get('/api/health', async (req, res) => {
 app.get('/health', async (req, res) => {
   const isHealthy = await healthCheckService.isHealthy();
   res.status(isHealthy ? 200 : 503).send(isHealthy ? 'OK' : 'UNHEALTHY');
+});
+
+// Database wake-up endpoint
+app.get('/api/wake', async (req, res) => {
+  try {
+    // Simple database query to wake up the connection
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$disconnect();
+    
+    res.json({
+      status: 'awake',
+      message: 'Database connection established',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    logger.error('Database wake-up failed', error);
+    res.status(503).json({
+      status: 'sleeping',
+      message: 'Database connection failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Import routes

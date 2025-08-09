@@ -33,10 +33,36 @@ export interface FeatureAccess {
 }
 
 export const subscriptionService = {
+  // Wake up the database (useful for sleeping databases on free hosting)
+  async wakeUpDatabase(): Promise<void> {
+    try {
+      await api.get('/wake')
+    } catch (error) {
+      console.warn('Database wake-up failed:', error)
+      // Don't throw - this is just a helper
+    }
+  },
+
   // Get available subscription tiers
   async getSubscriptionTiers(): Promise<SubscriptionTier[]> {
-    const response = await api.get('/subscriptions/tiers')
-    return response.data.data
+    try {
+      const response = await api.get('/subscriptions/tiers')
+      return response.data.data
+    } catch (error: any) {
+      // If the first request fails, try waking up the database and retry once
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        console.log('Attempting to wake up database and retry...')
+        await this.wakeUpDatabase()
+        
+        // Wait a moment for the database to wake up
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Retry the request
+        const response = await api.get('/subscriptions/tiers')
+        return response.data.data
+      }
+      throw error
+    }
   },
 
   // Get current user's subscription
