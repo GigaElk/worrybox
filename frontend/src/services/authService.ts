@@ -46,8 +46,33 @@ export interface UsernameAvailabilityResponse {
 export const authService = {
   // Authentication
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post('/auth/login', data)
-    return response.data.data
+    try {
+      const response = await api.post('/auth/login', data)
+      return response.data.data
+    } catch (error: any) {
+      // If we get a 503 (service unavailable), try to wake up the database and retry once
+      if (error.response?.status === 503 || error.code === 'ERR_NETWORK') {
+        console.log('Login failed, attempting to wake up database and retry...')
+        
+        try {
+          // Try to wake up the database
+          await api.get('/wake')
+          
+          // Wait a moment for the database to wake up
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Retry the login
+          const response = await api.post('/auth/login', data)
+          return response.data.data
+        } catch (retryError) {
+          // If retry fails, throw the original error
+          throw error
+        }
+      }
+      
+      // For other errors (like 401), throw immediately
+      throw error
+    }
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {

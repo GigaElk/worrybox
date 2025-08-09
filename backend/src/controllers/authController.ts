@@ -113,14 +113,30 @@ export class AuthController {
         data: result,
       });
     } catch (error: any) {
-      res.status(401).json({
-        error: {
-          code: 'LOGIN_FAILED',
-          message: error.message,
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
-      });
+      // Check if it's a database/server error vs authentication error
+      if (error.message === 'Invalid email or password') {
+        // Legitimate authentication failure
+        res.status(401).json({
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: error.message,
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      } else {
+        // Likely a server/database error
+        console.error('Login server error:', error);
+        res.status(503).json({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Login service temporarily unavailable. Please try again in a moment.',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
     }
   }
 

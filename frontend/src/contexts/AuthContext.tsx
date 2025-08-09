@@ -57,7 +57,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Set user
       setUser(response.user)
     } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Login failed'
+      let message = 'Login failed'
+      
+      if (error.response?.data?.error) {
+        const errorData = error.response.data.error
+        
+        if (errorData.code === 'INVALID_CREDENTIALS') {
+          message = 'Invalid email or password. Please check your credentials and try again.'
+        } else if (errorData.code === 'SERVICE_UNAVAILABLE') {
+          message = 'Login service is temporarily unavailable. Please try again in a moment.'
+        } else {
+          message = errorData.message || 'Login failed'
+        }
+      } else if (error.code === 'ERR_NETWORK') {
+        message = 'Unable to connect to the server. Please check your internet connection and try again.'
+      }
+      
       throw new Error(message)
     }
   }
