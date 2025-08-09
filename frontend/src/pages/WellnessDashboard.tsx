@@ -46,8 +46,7 @@ const WellnessDashboard: React.FC = () => {
   }
 
   return (
-    <FeatureGate feature="guided_exercises">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Wellness Center</h1>
@@ -95,8 +94,9 @@ const WellnessDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Personalized Recommendations */}
-        <div className="mb-8">
+        {/* Personalized Recommendations - Premium Feature */}
+        <FeatureGate feature="guided_exercises">
+          <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-gray-900">Recommended for You</h2>
             <Link 
@@ -174,7 +174,8 @@ const WellnessDashboard: React.FC = () => {
               </Link>
             </div>
           )}
-        </div>
+          </div>
+        </FeatureGate>
 
         {/* Recent Exercises */}
         <div className="mb-8">
@@ -249,7 +250,7 @@ const WellnessDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </FeatureGate>
+    </div>
   )
 }
 
