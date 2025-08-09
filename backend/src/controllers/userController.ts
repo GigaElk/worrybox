@@ -19,6 +19,24 @@ export const updateProfileValidation = [
     .optional()
     .isURL()
     .withMessage('Avatar URL must be a valid URL'),
+  // Location validation
+  body('country')
+    .optional()
+    .isLength({ min: 2, max: 2 })
+    .isAlpha()
+    .withMessage('Country must be a valid 2-letter ISO country code'),
+  body('region')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Region must be between 1 and 100 characters'),
+  body('city')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('City must be between 1 and 100 characters'),
+  body('locationSharing')
+    .optional()
+    .isBoolean()
+    .withMessage('Location sharing must be a boolean value'),
 ];
 
 export const searchUsersValidation = [

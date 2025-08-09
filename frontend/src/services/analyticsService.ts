@@ -1,127 +1,131 @@
 import api from './api'
 
-export interface PersonalAnalytics {
-  overview: {
-    totalWorries: number
-    worriesThisMonth: number
-    worriesThisWeek: number
-    averageWorriesPerWeek: number
-    mostActiveDay: string
-    mostActiveHour: number
-  }
-  trends: {
-    weeklyTrend: Array<{
-      week: string
-      count: number
-      change: number
-    }>
-    monthlyTrend: Array<{
-      month: string
-      count: number
-      change: number
-    }>
-    dailyPattern: Array<{
-      dayOfWeek: string
-      averageCount: number
-    }>
-    hourlyPattern: Array<{
-      hour: number
-      averageCount: number
-    }>
-  }
-  categories: {
-    breakdown: Array<{
-      category: string
-      count: number
-      percentage: number
-      trend: 'up' | 'down' | 'stable'
-    }>
-    topWorries: Array<{
-      category: string
-      subcategory?: string
-      recentCount: number
-      totalCount: number
-    }>
-  }
-  sentiment: {
-    averageSentiment: number
-    sentimentTrend: Array<{
-      period: string
-      averageSentiment: number
-    }>
-    sentimentDistribution: {
-      veryNegative: number
-      negative: number
-      neutral: number
-      positive: number
-      veryPositive: number
-    }
-  }
-  engagement: {
-    totalPosts: number
-    postsWithBlogContent: number
-    averagePostLength: number
-    privacyBreakdown: {
-      public: number
-      friends: number
-      private: number
-    }
-    scheduledPosts: number
-  }
-  insights: Array<{
-    type: 'trend' | 'pattern' | 'milestone' | 'suggestion'
-    title: string
-    description: string
-    severity: 'info' | 'warning' | 'positive'
-    actionable?: boolean
-  }>
+export interface GeographicAnalyticsQuery {
+  countries?: string[]
+  regions?: string[]
+  timeRange: '30d' | '90d' | '1y'
+  categories?: string[]
+  minUserThreshold?: number
 }
 
-export interface WorryFrequencyData {
-  date: string
-  count: number
-}
-
-export interface CategoryTrendData {
-  category: string
-  data: Array<{
-    period: string
+export interface GeographicAnalyticsResult {
+  region: string
+  country: string
+  timeRange: string
+  totalUsers: number
+  worryCategories: {
+    category: string
     count: number
-  }>
+    percentage: number
+    trend: 'increasing' | 'decreasing' | 'stable'
+  }[]
+  sentimentAnalysis: {
+    averageSentiment: number
+    distribution: Record<string, number>
+  }
+  topKeywords: string[]
+  privacyNote: string
 }
 
-export interface AnalyticsSummary {
-  overview: PersonalAnalytics['overview']
-  topCategories: PersonalAnalytics['categories']['breakdown']
-  recentInsights: PersonalAnalytics['insights']
-  sentimentSummary: {
-    average: number
-    distribution: PersonalAnalytics['sentiment']['sentimentDistribution']
-  }
+export interface RegionSummary {
+  country: string
+  region?: string
+  totalUsers: number
+  totalPosts: number
+  averageSentiment: number
+  topCategories: string[]
+}
+
+export interface CategoryTrend {
+  country: string
+  region?: string
+  category: string
+  month: string
+  count: number
+  trend: 'increasing' | 'decreasing' | 'stable'
+}
+
+export interface AvailableRegions {
+  countries: string[]
+  regionsByCountry: Record<string, string[]>
+  totalRegions: number
 }
 
 export const analyticsService = {
-  // Get comprehensive personal analytics
-  async getPersonalAnalytics(timeRange: '30d' | '90d' | '1y' = '30d'): Promise<PersonalAnalytics> {
-    const response = await api.get(`/analytics/personal?timeRange=${timeRange}`)
-    return response.data.data
+  // Get geographic analytics data
+  async getGeographicAnalytics(query: GeographicAnalyticsQuery): Promise<{
+    data: GeographicAnalyticsResult[]
+    meta: {
+      totalRegions: number
+      timeRange: string
+      privacyNote: string
+      generatedAt: string
+    }
+  }> {
+    const params = new URLSearchParams()
+    if (query.countries) params.append('countries', query.countries.join(','))
+    if (query.regions) params.append('regions', query.regions.join(','))
+    params.append('timeRange', query.timeRange)
+    if (query.categories) params.append('categories', query.categories.join(','))
+    if (query.minUserThreshold) params.append('minUserThreshold', query.minUserThreshold.toString())
+
+    const response = await api.get(`/analytics/geographic?${params.toString()}`)
+    return response.data
   },
 
-  // Get analytics summary for dashboard
-  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
-    const response = await api.get('/analytics/summary')
-    return response.data.data
+  // Get region summaries for dashboard overview
+  async getRegionSummaries(query: Partial<GeographicAnalyticsQuery>): Promise<{
+    data: RegionSummary[]
+    meta: {
+      totalRegions: number
+      timeRange: string
+    }
+  }> {
+    const params = new URLSearchParams()
+    if (query.timeRange) params.append('timeRange', query.timeRange)
+    if (query.countries) params.append('countries', query.countries.join(','))
+
+    const response = await api.get(`/analytics/regions/summaries?${params.toString()}`)
+    return response.data
   },
 
-  // Get worry frequency data for charts
-  async getWorryFrequencyData(days: number = 30): Promise<WorryFrequencyData[]> {
-    const response = await api.get(`/analytics/frequency?days=${days}`)
-    return response.data.data
+  // Get available regions for filtering
+  async getAvailableRegions(): Promise<{
+    data: AvailableRegions
+  }> {
+    const response = await api.get('/analytics/regions/available')
+    return response.data
   },
 
-  // Get category trend data for charts
-  async getCategoryTrendData(days: number = 30): Promise<CategoryTrendData[]> {
-    const response = await api.get(`/analytics/categories/trends?days=${days}`)
-    return response.data.data
+  // Get category trends by region
+  async getCategoryTrends(query: Partial<GeographicAnalyticsQuery>): Promise<{
+    data: CategoryTrend[]
+    meta: {
+      timeRange: string
+    }
+  }> {
+    const params = new URLSearchParams()
+    if (query.timeRange) params.append('timeRange', query.timeRange)
+    if (query.countries) params.append('countries', query.countries.join(','))
+    if (query.categories) params.append('categories', query.categories.join(','))
+
+    const response = await api.get(`/analytics/categories/trends?${params.toString()}`)
+    return response.data
+  },
+
+  // Export analytics data
+  async exportAnalytics(query: GeographicAnalyticsQuery, format: 'json' | 'csv' = 'json'): Promise<Blob> {
+    const params = new URLSearchParams()
+    if (query.countries) params.append('countries', query.countries.join(','))
+    if (query.regions) params.append('regions', query.regions.join(','))
+    params.append('timeRange', query.timeRange)
+    if (query.categories) params.append('categories', query.categories.join(','))
+    if (query.minUserThreshold) params.append('minUserThreshold', query.minUserThreshold.toString())
+    params.append('format', format)
+
+    const response = await api.get(`/analytics/export?${params.toString()}`, {
+      responseType: 'blob'
+    })
+    return response.data
   }
 }

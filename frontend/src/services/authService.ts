@@ -7,6 +7,11 @@ export interface User {
   displayName?: string
   avatarUrl?: string
   emailVerified: boolean
+  // Location fields
+  country?: string
+  region?: string
+  city?: string
+  locationSharing?: boolean
 }
 
 export interface LoginRequest {

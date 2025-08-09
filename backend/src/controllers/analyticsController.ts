@@ -1,16 +1,62 @@
 import { Request, Response } from 'express';
-import { AnalyticsService } from '../services/analyticsService';
-import { PayPalService } from '../services/paypalService';
+import { query, validationResult } from 'express-validator';
+import { GeographicAnalyticsService, GeographicAnalyticsQuery } from '../services/geographicAnalyticsService';
+import { paypalService } from '../services/paypalService';
 
-const analyticsService = AnalyticsService.getInstance();
-const paypalService = PayPalService.getInstance();
+const analyticsService = new GeographicAnalyticsService();
+
+// Validation rules
+export const getGeographicAnalyticsValidation = [
+  query('countries')
+    .optional()
+    .isString()
+    .withMessage('Countries must be a comma-separated string'),
+  query('regions')
+    .optional()
+    .isString()
+    .withMessage('Regions must be a comma-separated string'),
+  query('timeRange')
+    .optional()
+    .isIn(['30d', '90d', '1y'])
+    .withMessage('Time range must be 30d, 90d, or 1y'),
+  query('categories')
+    .optional()
+    .isString()
+    .withMessage('Categories must be a comma-separated string'),
+  query('minUserThreshold')
+    .optional()
+    .isInt({ min: 50, max: 1000 })
+    .withMessage('Minimum user threshold must be between 50 and 1000'),
+];
+
+export const exportAnalyticsValidation = [
+  ...getGeographicAnalyticsValidation,
+  query('format')
+    .optional()
+    .isIn(['json', 'csv'])
+    .withMessage('Format must be json or csv'),
+];
 
 export class AnalyticsController {
   /**
-   * Get personal analytics for the authenticated user
+   * Get geographic analytics data (Premium feature)
    */
-  async getPersonalAnalytics(req: Request, res: Response) {
+  async getGeographicAnalytics(req: Request, res: Response) {
     try {
+      // Check validation results
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: errors.array(),
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
       if (!req.user) {
         return res.status(401).json({
           error: {
@@ -22,46 +68,45 @@ export class AnalyticsController {
         });
       }
 
-      // Check if user has access to personal analytics
-      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      // Check if user has premium access
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
-            code: 'FEATURE_ACCESS_DENIED',
-            message: 'Personal analytics requires a Supporter or Premium subscription',
-            upgradeRequired: true,
+            code: 'PREMIUM_REQUIRED',
+            message: 'Premium subscription required to access geographic analytics',
+            upgradeUrl: '/pricing',
           },
           timestamp: new Date().toISOString(),
           path: req.path,
         });
       }
 
-      const timeRange = (req.query.timeRange as '30d' | '90d' | '1y') || '30d';
-      
-      // Validate time range
-      if (!['30d', '90d', '1y'].includes(timeRange)) {
-        return res.status(400).json({
-          error: {
-            code: 'INVALID_TIME_RANGE',
-            message: 'Time range must be one of: 30d, 90d, 1y',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
+      const analyticsQuery: GeographicAnalyticsQuery = {
+        countries: req.query.countries ? (req.query.countries as string).split(',') : undefined,
+        regions: req.query.regions ? (req.query.regions as string).split(',') : undefined,
+        timeRange: (req.query.timeRange as '30d' | '90d' | '1y') || '30d',
+        categories: req.query.categories ? (req.query.categories as string).split(',') : undefined,
+        minUserThreshold: req.query.minUserThreshold ? parseInt(req.query.minUserThreshold as string) : undefined,
+      };
 
-      const analytics = await analyticsService.getPersonalAnalytics(req.user.userId, timeRange);
+      const analytics = await analyticsService.getGeographicAnalytics(analyticsQuery);
 
       res.json({
         data: analytics,
-        timeRange,
+        meta: {
+          totalRegions: analytics.length,
+          timeRange: analyticsQuery.timeRange,
+          privacyNote: 'All data is aggregated and anonymized with minimum privacy thresholds enforced.',
+          generatedAt: new Date().toISOString(),
+        },
       });
     } catch (error: any) {
-      console.error('Failed to get personal analytics:', error);
+      console.error('Geographic analytics error:', error);
       res.status(500).json({
         error: {
           code: 'ANALYTICS_FETCH_FAILED',
-          message: error.message,
+          message: 'Failed to fetch geographic analytics',
         },
         timestamp: new Date().toISOString(),
         path: req.path,
@@ -70,9 +115,9 @@ export class AnalyticsController {
   }
 
   /**
-   * Get worry frequency data for charts
+   * Get region summaries for dashboard overview
    */
-  async getWorryFrequencyData(req: Request, res: Response) {
+  async getRegionSummaries(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(401).json({
@@ -85,168 +130,225 @@ export class AnalyticsController {
         });
       }
 
-      // Check if user has access to personal analytics
-      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
       if (!hasAccess) {
         return res.status(403).json({
           error: {
-            code: 'FEATURE_ACCESS_DENIED',
-            message: 'Personal analytics requires a Supporter or Premium subscription',
-            upgradeRequired: true,
+            code: 'PREMIUM_REQUIRED',
+            message: 'Premium subscription required to access analytics',
           },
           timestamp: new Date().toISOString(),
           path: req.path,
         });
       }
 
-      const days = parseInt(req.query.days as string) || 30;
-      
-      // Validate days parameter
-      if (days < 1 || days > 365) {
-        return res.status(400).json({
-          error: {
-            code: 'INVALID_DAYS_PARAMETER',
-            message: 'Days parameter must be between 1 and 365',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      const frequencyData = await analyticsService.getWorryFrequencyData(req.user.userId, days);
-
-      res.json({
-        data: frequencyData,
-        days,
-      });
-    } catch (error: any) {
-      console.error('Failed to get worry frequency data:', error);
-      res.status(500).json({
-        error: {
-          code: 'FREQUENCY_DATA_FETCH_FAILED',
-          message: error.message,
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
-      });
-    }
-  }
-
-  /**
-   * Get category trend data for charts
-   */
-  async getCategoryTrendData(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      // Check if user has access to personal analytics
-      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
-      if (!hasAccess) {
-        return res.status(403).json({
-          error: {
-            code: 'FEATURE_ACCESS_DENIED',
-            message: 'Personal analytics requires a Supporter or Premium subscription',
-            upgradeRequired: true,
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      const days = parseInt(req.query.days as string) || 30;
-      
-      // Validate days parameter
-      if (days < 1 || days > 365) {
-        return res.status(400).json({
-          error: {
-            code: 'INVALID_DAYS_PARAMETER',
-            message: 'Days parameter must be between 1 and 365',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      const categoryTrends = await analyticsService.getCategoryTrendData(req.user.userId, days);
-
-      res.json({
-        data: categoryTrends,
-        days,
-      });
-    } catch (error: any) {
-      console.error('Failed to get category trend data:', error);
-      res.status(500).json({
-        error: {
-          code: 'CATEGORY_TREND_FETCH_FAILED',
-          message: error.message,
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
-      });
-    }
-  }
-
-  /**
-   * Get analytics summary for dashboard
-   */
-  async getAnalyticsSummary(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      // Check if user has access to personal analytics
-      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'personal_analytics');
-      if (!hasAccess) {
-        return res.status(403).json({
-          error: {
-            code: 'FEATURE_ACCESS_DENIED',
-            message: 'Personal analytics requires a Supporter or Premium subscription',
-            upgradeRequired: true,
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      const analytics = await analyticsService.getPersonalAnalytics(req.user.userId, '30d');
-      
-      // Return a simplified summary for dashboard widgets
-      const summary = {
-        overview: analytics.overview,
-        topCategories: analytics.categories.breakdown.slice(0, 5),
-        recentInsights: analytics.insights.slice(0, 3),
-        sentimentSummary: {
-          average: analytics.sentiment.averageSentiment,
-          distribution: analytics.sentiment.sentimentDistribution
-        }
+      const analyticsQuery: GeographicAnalyticsQuery = {
+        timeRange: (req.query.timeRange as '30d' | '90d' | '1y') || '30d',
+        countries: req.query.countries ? (req.query.countries as string).split(',') : undefined,
       };
 
+      const summaries = await analyticsService.getRegionSummaries(analyticsQuery);
+
       res.json({
-        data: summary,
+        data: summaries,
+        meta: {
+          totalRegions: summaries.length,
+          timeRange: analyticsQuery.timeRange,
+        },
       });
     } catch (error: any) {
-      console.error('Failed to get analytics summary:', error);
+      console.error('Region summaries error:', error);
       res.status(500).json({
         error: {
-          code: 'ANALYTICS_SUMMARY_FETCH_FAILED',
-          message: error.message,
+          code: 'SUMMARIES_FETCH_FAILED',
+          message: 'Failed to fetch region summaries',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Get category trends by region
+   */
+  async getCategoryTrends(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: {
+            code: 'PREMIUM_REQUIRED',
+            message: 'Premium subscription required to access analytics',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const analyticsQuery: GeographicAnalyticsQuery = {
+        timeRange: (req.query.timeRange as '30d' | '90d' | '1y') || '30d',
+        countries: req.query.countries ? (req.query.countries as string).split(',') : undefined,
+        categories: req.query.categories ? (req.query.categories as string).split(',') : undefined,
+      };
+
+      const trends = await analyticsService.getCategoryTrends(analyticsQuery);
+
+      res.json({
+        data: trends,
+        meta: {
+          timeRange: analyticsQuery.timeRange,
+        },
+      });
+    } catch (error: any) {
+      console.error('Category trends error:', error);
+      res.status(500).json({
+        error: {
+          code: 'TRENDS_FETCH_FAILED',
+          message: 'Failed to fetch category trends',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Export analytics data (Premium feature)
+   */
+  async exportAnalytics(req: Request, res: Response) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: errors.array(),
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: {
+            code: 'PREMIUM_REQUIRED',
+            message: 'Premium subscription required to export analytics data',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const analyticsQuery: GeographicAnalyticsQuery = {
+        countries: req.query.countries ? (req.query.countries as string).split(',') : undefined,
+        regions: req.query.regions ? (req.query.regions as string).split(',') : undefined,
+        timeRange: (req.query.timeRange as '30d' | '90d' | '1y') || '30d',
+        categories: req.query.categories ? (req.query.categories as string).split(',') : undefined,
+        minUserThreshold: req.query.minUserThreshold ? parseInt(req.query.minUserThreshold as string) : undefined,
+      };
+
+      const format = (req.query.format as 'json' | 'csv') || 'json';
+      const exportData = await analyticsService.exportAnalyticsData(analyticsQuery, format);
+
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="worrybox-analytics-${Date.now()}.csv"`);
+        res.send(exportData);
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="worrybox-analytics-${Date.now()}.json"`);
+        res.json(exportData);
+      }
+    } catch (error: any) {
+      console.error('Export analytics error:', error);
+      res.status(500).json({
+        error: {
+          code: 'EXPORT_FAILED',
+          message: 'Failed to export analytics data',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Get available countries and regions for filtering
+   */
+  async getAvailableRegions(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const hasAccess = await paypalService.hasFeatureAccess(req.user.userId, 'demographic_analytics');
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: {
+            code: 'PREMIUM_REQUIRED',
+            message: 'Premium subscription required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      // Get available regions with minimum user thresholds
+      const regions = await analyticsService.getRegionSummaries({ timeRange: '1y' });
+      
+      const countries = [...new Set(regions.map(r => r.country))].sort();
+      const regionsByCountry = regions.reduce((acc, region) => {
+        if (!acc[region.country]) acc[region.country] = [];
+        if (region.region) acc[region.country].push(region.region);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      res.json({
+        data: {
+          countries,
+          regionsByCountry,
+          totalRegions: regions.length,
+        },
+      });
+    } catch (error: any) {
+      console.error('Available regions error:', error);
+      res.status(500).json({
+        error: {
+          code: 'REGIONS_FETCH_FAILED',
+          message: 'Failed to fetch available regions',
         },
         timestamp: new Date().toISOString(),
         path: req.path,

@@ -15,11 +15,7 @@ import { useSubscription } from '../contexts/SubscriptionContext'
 import { analyticsService, GeographicAnalyticsQuery, RegionSummary } from '../services/analyticsService'
 import { toast } from 'react-hot-toast'
 
-interface AnalyticsDashboardProps {
-  className?: string
-}
-
-const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' }) => {
+const AnalyticsDashboard: React.FC = () => {
   const { user } = useAuth()
   const { subscription } = useSubscription()
   const [isLoading, setIsLoading] = useState(true)
@@ -106,52 +102,56 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
 
   if (!user) {
     return (
-      <div className={`text-center py-12 ${className}`}>
-        <p className="text-gray-600">Please log in to access analytics.</p>
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center">
+          <p className="text-gray-600">Please log in to access analytics.</p>
+        </div>
       </div>
     )
   }
 
   if (!hasPremiumAccess) {
     return (
-      <div className={`text-center ${className}`}>
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-8 border border-purple-200">
-          <Crown className="h-16 w-16 text-purple-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Premium Analytics Dashboard</h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Access powerful geographic insights about mental health patterns and community trends. 
-            Help researchers and organizations better understand regional mental health needs.
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <Globe className="h-8 w-8 text-blue-600 mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Geographic Insights</h3>
-              <p className="text-sm text-gray-600">View worry patterns by country and region</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <TrendingUp className="h-8 w-8 text-green-600 mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Trend Analysis</h3>
-              <p className="text-sm text-gray-600">Track mental health trends over time</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <Download className="h-8 w-8 text-purple-600 mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-3">Data Export</h3>
-              <p className="text-sm text-gray-600">Export anonymized data for research</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <a
-              href="/pricing"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              <Crown className="h-5 w-5 mr-2" />
-              Upgrade to Premium
-            </a>
-            <p className="text-sm text-gray-500">
-              Starting at $9.99/month • Cancel anytime
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center">
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-8 border border-purple-200">
+            <Crown className="h-16 w-16 text-purple-600 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Premium Analytics Dashboard</h1>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              Access powerful geographic insights about mental health patterns and community trends. 
+              Help researchers and organizations better understand regional mental health needs.
             </p>
+            
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <Globe className="h-8 w-8 text-blue-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">Geographic Insights</h3>
+                <p className="text-sm text-gray-600">View worry patterns by country and region</p>
+              </div>
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <TrendingUp className="h-8 w-8 text-green-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">Trend Analysis</h3>
+                <p className="text-sm text-gray-600">Track mental health trends over time</p>
+              </div>
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <Download className="h-8 w-8 text-purple-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-3">Data Export</h3>
+                <p className="text-sm text-gray-600">Export anonymized data for research</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <a
+                href="/pricing"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                <Crown className="h-5 w-5 mr-2" />
+                Upgrade to Premium
+              </a>
+              <p className="text-sm text-gray-500">
+                Starting at $9.99/month • Cancel anytime
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -159,43 +159,47 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <Globe className="w-6 h-6 mr-2 text-blue-600" />
-          Geographic Analytics
-        </h2>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </button>
-          <div className="flex items-center space-x-2">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+            <p className="text-gray-600">
+              Geographic insights into mental health patterns and community trends
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
             <button
-              onClick={() => handleExport('json')}
+              onClick={() => setShowFilters(!showFilters)}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              <Download className="h-4 w-4 mr-2" />
-              JSON
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
             </button>
-            <button
-              onClick={() => handleExport('csv')}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              CSV
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handleExport('json')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                JSON
+              </button>
+              <button
+                onClick={() => handleExport('csv')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
@@ -258,7 +262,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
       )}
 
       {/* Privacy Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
         <div className="flex items-start">
           <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
           <div>
@@ -283,7 +287,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
       {!isLoading && (
         <>
           {/* Summary Stats */}
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <Globe className="h-8 w-8 text-blue-600" />

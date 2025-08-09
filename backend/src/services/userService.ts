@@ -11,6 +11,11 @@ export class UserService {
         displayName: data.displayName,
         bio: data.bio,
         avatarUrl: data.avatarUrl,
+        // Location fields
+        country: data.country,
+        region: data.region,
+        city: data.city,
+        locationSharing: data.locationSharing,
       },
     });
 
@@ -22,6 +27,11 @@ export class UserService {
       bio: updatedUser.bio || undefined,
       avatarUrl: updatedUser.avatarUrl || undefined,
       emailVerified: updatedUser.emailVerified,
+      // Location fields
+      country: updatedUser.country || undefined,
+      region: updatedUser.region || undefined,
+      city: updatedUser.city || undefined,
+      locationSharing: updatedUser.locationSharing,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
@@ -44,6 +54,11 @@ export class UserService {
       bio: user.bio || undefined,
       avatarUrl: user.avatarUrl || undefined,
       emailVerified: user.emailVerified,
+      // Location fields
+      country: user.country || undefined,
+      region: user.region || undefined,
+      city: user.city || undefined,
+      locationSharing: user.locationSharing,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -66,6 +81,11 @@ export class UserService {
       bio: user.bio || undefined,
       avatarUrl: user.avatarUrl || undefined,
       emailVerified: user.emailVerified,
+      // Location fields (but don't expose to other users for privacy)
+      country: undefined,
+      region: undefined,
+      city: undefined,
+      locationSharing: undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

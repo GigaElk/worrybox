@@ -4,6 +4,11 @@ export interface UpdateProfileRequest {
   displayName?: string
   bio?: string
   avatarUrl?: string
+  // Location fields
+  country?: string
+  region?: string
+  city?: string
+  locationSharing?: boolean
 }
 
 export interface UserProfile {
@@ -14,6 +19,11 @@ export interface UserProfile {
   bio?: string
   avatarUrl?: string
   emailVerified: boolean
+  // Location fields
+  country?: string
+  region?: string
+  city?: string
+  locationSharing?: boolean
   createdAt: string
   updatedAt: string
 }

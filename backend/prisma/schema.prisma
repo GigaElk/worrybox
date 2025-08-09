@@ -15,12 +15,19 @@ model User {
   email         String   @unique
   passwordHash  String   @map("password_hash")
   username      String   @unique
-  displayName   String?  @map("display_name")
-  bio           String?
-  avatarUrl     String?  @map("avatar_url")
-  emailVerified Boolean  @default(false) @map("email_verified")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  displayName     String?  @map("display_name")
+  bio             String?
+  avatarUrl       String?  @map("avatar_url")
+  emailVerified   Boolean  @default(false) @map("email_verified")
+  
+  // Location fields (all optional, user-controlled)
+  country         String?  // User-provided country code (ISO 3166-1 alpha-2)
+  region          String?  // User-provided state/province/region  
+  city            String?  // User-provided city
+  locationSharing Boolean  @default(false) @map("location_sharing") // Consent for analytics
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
   posts                    Post[]
@@ -456,4 +463,22 @@ model AIReprocessingQueue {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@map("ai_reprocessing_queue")
+}
+
+model GeographicAnalytics {
+  id            String   @id @default(uuid())
+  country       String   // Anonymized country code (e.g., 'US', 'UK', 'CA')
+  region        String?  // Anonymized region/state (optional)
+  category      String   // Worry category
+  subcategory   String?  // Worry subcategory
+  sentiment     Decimal  @db.Decimal(5, 2) // Average sentiment score
+  count         Int      // Number of posts/worries
+  period        String   // Time period (e.g., '2024-01', '2024-W01')
+  periodType    String   // 'month', 'week', 'day'
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Ensure we can't accidentally identify users - enforce minimum thresholds
+  @@unique([country, region, category, period, periodType])
+  @@map("geographic_analytics")
 }

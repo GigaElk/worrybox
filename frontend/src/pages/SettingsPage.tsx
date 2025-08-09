@@ -12,6 +12,11 @@ interface UserSettings {
   emailNotifications: boolean
   pushNotifications: boolean
   privacyLevel: 'public' | 'friends' | 'private'
+  // Location fields
+  country: string
+  region: string
+  city: string
+  locationSharing: boolean
 }
 
 const SettingsPage: React.FC = () => {
@@ -23,7 +28,12 @@ const SettingsPage: React.FC = () => {
     language: 'en',
     emailNotifications: true,
     pushNotifications: true,
-    privacyLevel: 'public'
+    privacyLevel: 'public',
+    // Location fields
+    country: '',
+    region: '',
+    city: '',
+    locationSharing: false
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -36,7 +46,12 @@ const SettingsPage: React.FC = () => {
         language: 'en', // TODO: Get from user preferences
         emailNotifications: true, // TODO: Get from user preferences
         pushNotifications: true, // TODO: Get from user preferences
-        privacyLevel: 'public' // TODO: Get from user preferences
+        privacyLevel: 'public', // TODO: Get from user preferences
+        // Location fields
+        country: user.country || '',
+        region: user.region || '',
+        city: user.city || '',
+        locationSharing: user.locationSharing || false
       })
     }
   }, [user])
@@ -49,7 +64,12 @@ const SettingsPage: React.FC = () => {
       // Update profile information
       await userService.updateProfile({
         displayName: settings.displayName,
-        bio: settings.bio
+        bio: settings.bio,
+        // Location fields
+        country: settings.country,
+        region: settings.region,
+        city: settings.city,
+        locationSharing: settings.locationSharing
       })
 
       // TODO: Update notification preferences
@@ -253,11 +273,109 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Location Settings */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <Globe className="h-5 w-5 text-gray-500 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900">Location & Privacy</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">Help Improve Community Insights</h3>
+              <p className="text-sm text-blue-800 mb-3">
+                By sharing your location, you help us provide anonymous, aggregated insights about regional mental health patterns. 
+                This data helps researchers and organizations better understand community needs.
+              </p>
+              <p className="text-xs text-blue-700">
+                Your location is never shared individually and is only used in anonymous, aggregated statistics with strict privacy protections.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">Share Location for Community Insights</h3>
+                <p className="text-sm text-gray-500">Allow anonymous use of your location for aggregated mental health research</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.locationSharing || false}
+                  onChange={(e) => handleInputChange('locationSharing', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              </label>
+            </div>
+
+            {settings.locationSharing && (
+              <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <select
+                    id="country"
+                    value={settings.country || ''}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Select Country</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="ES">Spain</option>
+                    <option value="IT">Italy</option>
+                    <option value="JP">Japan</option>
+                    <option value="KR">South Korea</option>
+                    <option value="BR">Brazil</option>
+                    <option value="MX">Mexico</option>
+                    <option value="IN">India</option>
+                    <option value="CN">China</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
+                    State/Province/Region (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="region"
+                    value={settings.region || ''}
+                    onChange={(e) => handleInputChange('region', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="e.g., California, Ontario, England"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    City (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    value={settings.city || ''}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="e.g., Los Angeles, Toronto, London"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Language Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-4">
             <Globe className="h-5 w-5 text-gray-500 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Language & Region</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Language</h2>
           </div>
           
           <div className="space-y-4">

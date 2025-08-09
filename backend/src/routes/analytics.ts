@@ -1,17 +1,24 @@
 import { Router } from 'express';
-import { AnalyticsController } from '../controllers/analyticsController';
+import { 
+  AnalyticsController, 
+  getGeographicAnalyticsValidation, 
+  exportAnalyticsValidation 
+} from '../controllers/analyticsController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 const analyticsController = new AnalyticsController();
 
-// All analytics routes require authentication
+// All analytics routes require authentication and premium access
 router.use(authenticateToken);
 
-// Personal analytics endpoints
-router.get('/personal', analyticsController.getPersonalAnalytics);
-router.get('/summary', analyticsController.getAnalyticsSummary);
-router.get('/frequency', analyticsController.getWorryFrequencyData);
-router.get('/categories/trends', analyticsController.getCategoryTrendData);
+// Geographic analytics endpoints
+router.get('/geographic', getGeographicAnalyticsValidation, analyticsController.getGeographicAnalytics);
+router.get('/regions/summaries', analyticsController.getRegionSummaries);
+router.get('/regions/available', analyticsController.getAvailableRegions);
+router.get('/categories/trends', analyticsController.getCategoryTrends);
+
+// Data export endpoints
+router.get('/export', exportAnalyticsValidation, analyticsController.exportAnalytics);
 
 export default router;
