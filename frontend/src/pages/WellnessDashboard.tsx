@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { Heart, Brain, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import FeatureGate from '../components/FeatureGate'
+import ExerciseList from '../components/ExerciseList'
+import CopingTechniqueList from '../components/CopingTechniqueList'
 
 const WellnessDashboard: React.FC = () => {
   const { user } = useAuth()
@@ -74,6 +76,34 @@ const WellnessDashboard: React.FC = () => {
           </div>
         </div>
       </FeatureGate>
+
+      {/* Recent Exercises */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">Popular Exercises</h2>
+          <Link 
+            to="/wellness/exercises" 
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          >
+            View All
+          </Link>
+        </div>
+        <ExerciseList limit={6} showViewAll={false} />
+      </div>
+
+      {/* Coping Techniques */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">Coping Techniques</h2>
+          <Link 
+            to="/wellness/techniques" 
+            className="text-green-600 hover:text-green-800 text-sm font-medium"
+          >
+            View All
+          </Link>
+        </div>
+        <CopingTechniqueList limit={6} showViewAll={false} />
+      </div>
 
       {/* Debug Info */}
       <div className="bg-blue-50 p-4 rounded-lg">
