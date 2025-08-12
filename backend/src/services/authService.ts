@@ -87,6 +87,11 @@ export class AuthService {
         displayName: user.displayName || undefined,
         avatarUrl: user.avatarUrl || undefined,
         emailVerified: user.emailVerified,
+        // Location fields (will be null for new users)
+        country: user.country || undefined,
+        region: user.region || undefined,
+        city: user.city || undefined,
+        locationSharing: user.locationSharing,
       },
       token,
       refreshToken,
@@ -126,6 +131,11 @@ export class AuthService {
         displayName: user.displayName || undefined,
         avatarUrl: user.avatarUrl || undefined,
         emailVerified: user.emailVerified,
+        // Location fields (will be null for existing users until they set them)
+        country: user.country || undefined,
+        region: user.region || undefined,
+        city: user.city || undefined,
+        locationSharing: user.locationSharing,
       },
       token,
       refreshToken,
@@ -229,6 +239,11 @@ export class AuthService {
         displayName: true,
         avatarUrl: true,
         emailVerified: true,
+        // Location fields
+        country: true,
+        region: true,
+        city: true,
+        locationSharing: true,
         createdAt: true,
       },
     });
