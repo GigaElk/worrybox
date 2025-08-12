@@ -202,27 +202,52 @@ export class WellnessController {
           title: 'Thought Challenging',
           description: 'Question and reframe negative thought patterns',
           category: 'Cognitive',
+          instructions: 'When you notice a negative thought, ask: Is this thought realistic? What evidence supports or contradicts it? What would I tell a friend in this situation?',
           whenToUse: ['Negative thinking', 'Catastrophizing', 'Self-doubt'],
           effectiveness: 4.5,
-          instructions: 'When you notice a negative thought, ask: Is this thought realistic? What evidence supports or contradicts it? What would I tell a friend in this situation?'
+          scienceBasedRating: 4.8,
+          tags: ['cognitive', 'reframing', 'thoughts'],
+          imageUrl: null,
+          resources: [
+            {
+              title: 'Cognitive Behavioral Therapy Guide',
+              description: 'Learn more about thought challenging techniques',
+              url: 'https://example.com/cbt-guide',
+              type: 'article'
+            }
+          ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '2',
           title: 'The STOP Technique',
           description: 'Interrupt overwhelming emotions with a simple acronym',
           category: 'Emotional Regulation',
+          instructions: 'STOP what you are doing. TAKE a breath. OBSERVE your thoughts and feelings. PROCEED with intention.',
           whenToUse: ['Panic attacks', 'Overwhelming emotions', 'Impulsive reactions'],
           effectiveness: 4.3,
-          instructions: 'STOP what you are doing. TAKE a breath. OBSERVE your thoughts and feelings. PROCEED with intention.'
+          scienceBasedRating: 4.5,
+          tags: ['emotional regulation', 'mindfulness', 'grounding'],
+          imageUrl: null,
+          resources: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '3',
           title: 'Worry Time',
           description: 'Schedule specific time for worrying to prevent all-day anxiety',
           category: 'Time Management',
+          instructions: 'Set aside 15-20 minutes daily as "worry time." When worries arise outside this time, write them down to address during your scheduled worry period.',
           whenToUse: ['Persistent worrying', 'Racing thoughts', 'Sleep problems'],
           effectiveness: 4.1,
-          instructions: 'Set aside 15-20 minutes daily as "worry time." When worries arise outside this time, write them down to address during your scheduled worry period.'
+          scienceBasedRating: 4.2,
+          tags: ['time management', 'worry', 'anxiety'],
+          imageUrl: null,
+          resources: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }
       ];
 
