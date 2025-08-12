@@ -1,6 +1,8 @@
 import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Heart, Brain, TrendingUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import FeatureGate from '../components/FeatureGate'
 
 const WellnessDashboard: React.FC = () => {
   const { user } = useAuth()
@@ -53,6 +55,25 @@ const WellnessDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Personalized Recommendations - Premium Feature */}
+      <FeatureGate feature="guided_exercises">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">Recommended for You</h2>
+            <Link 
+              to="/wellness/exercises" 
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              View All Exercises
+            </Link>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <p>Premium recommendations would appear here</p>
+          </div>
+        </div>
+      </FeatureGate>
 
       {/* Debug Info */}
       <div className="bg-blue-50 p-4 rounded-lg">
