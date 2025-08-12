@@ -493,4 +493,165 @@ export class WellnessController {
       });
     }
   }
+
+  /**
+   * Start an exercise (create progress tracking)
+   */
+  async startExercise(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const { id: exerciseId } = req.params;
+
+      // Mock progress creation
+      // TODO: Implement actual database storage
+      const mockProgress = {
+        id: `progress-${Date.now()}`,
+        userId: req.user.id,
+        exerciseId,
+        completed: false,
+        currentStep: 0,
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        notes: null,
+        rating: null,
+        effectiveness: null,
+        exercise: null // Will be populated by frontend
+      };
+
+      res.json({
+        data: mockProgress,
+        message: 'Exercise started successfully'
+      });
+    } catch (error: any) {
+      console.error('Failed to start exercise:', error);
+      res.status(500).json({
+        error: {
+          code: 'START_EXERCISE_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Update exercise progress
+   */
+  async updateExerciseProgress(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      const { progressId } = req.params;
+      const { currentStep, completed, notes, rating, effectiveness } = req.body;
+
+      // Mock progress update
+      // TODO: Implement actual database update
+      const mockUpdatedProgress = {
+        id: progressId,
+        userId: req.user.id,
+        exerciseId: 'mock-exercise-id',
+        completed: completed || false,
+        currentStep: currentStep || 0,
+        startedAt: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+        completedAt: completed ? new Date().toISOString() : null,
+        notes: notes || null,
+        rating: rating || null,
+        effectiveness: effectiveness || null,
+        exercise: null
+      };
+
+      res.json({
+        data: mockUpdatedProgress,
+        message: 'Exercise progress updated successfully'
+      });
+    } catch (error: any) {
+      console.error('Failed to update exercise progress:', error);
+      res.status(500).json({
+        error: {
+          code: 'UPDATE_PROGRESS_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Get user's exercise history
+   */
+  async getUserExerciseHistory(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      // Mock exercise history
+      // TODO: Implement actual database query
+      const mockHistory = [
+        {
+          id: 'progress-1',
+          userId: req.user.id,
+          exerciseId: '1',
+          completed: true,
+          currentStep: 2,
+          startedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          completedAt: new Date(Date.now() - 86000000).toISOString(),
+          notes: 'This really helped me relax',
+          rating: 5,
+          effectiveness: 4,
+          exercise: {
+            id: '1',
+            title: '4-7-8 Breathing Technique',
+            description: 'A powerful breathing exercise for anxiety and sleep',
+            category: 'Breathing',
+            duration: 3,
+            difficulty: 'beginner'
+          }
+        }
+      ];
+
+      res.json({
+        data: mockHistory,
+        message: 'Exercise history retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Failed to get exercise history:', error);
+      res.status(500).json({
+        error: {
+          code: 'HISTORY_FETCH_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
 }
