@@ -71,7 +71,7 @@ export interface ExerciseRecommendation {
 export const guidedExerciseService = {
   // Get all available exercises
   async getAllExercises(category?: string): Promise<Exercise[]> {
-    const url = category ? `/wellness/exercises?category=${encodeURIComponent(category)}` : '/wellness/exercises'
+    const url = category ? `/wellness/exercises/popular?category=${encodeURIComponent(category)}` : '/wellness/exercises/popular'
     const response = await api.get(url)
     return response.data.data
   },
