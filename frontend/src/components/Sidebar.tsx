@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, PlusCircle, Users, Settings, BarChart3, Heart, CheckCircle, BookOpen, Bell, X } from 'lucide-react'
+import { Home, PlusCircle, Users, Settings, BarChart3, Heart, CheckCircle, BookOpen, Bell, X, Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { dashboardService, DashboardStats } from '../services/dashboardService'
 
 interface SidebarProps {
   sidebarOpen?: boolean
@@ -8,8 +10,36 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const location = useLocation()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadStats()
+    }
+  }, [isAuthenticated, user])
+
+  const loadStats = async () => {
+    try {
+      setIsLoadingStats(true)
+      const statsData = await dashboardService.getBasicStats()
+      setStats(statsData)
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error)
+      // Set default stats on error
+      setStats({
+        totalWorries: 0,
+        worriesThisWeek: 0,
+        resolvedWorries: 0,
+        followersCount: 0,
+        followingCount: 0
+      })
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }
 
   if (!isAuthenticated) {
     return null
@@ -75,26 +105,36 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           })}
         </nav>
       
-      {/* Quick Stats */}
-      <div className="p-4 mt-8">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Quick Stats</h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span>Total Worries:</span>
-              <span className="font-medium">0</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Resolved:</span>
-              <span className="font-medium text-green-600">0</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Followers:</span>
-              <span className="font-medium">0</span>
-            </div>
+        {/* Quick Stats */}
+        <div className="p-4 mt-8">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Quick Stats</h3>
+            {isLoadingStats ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Total Worries:</span>
+                  <span className="font-medium">{stats?.totalWorries || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Resolved:</span>
+                  <span className="font-medium text-green-600">{stats?.resolvedWorries || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Followers:</span>
+                  <span className="font-medium">{stats?.followersCount || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Following:</span>
+                  <span className="font-medium">{stats?.followingCount || 0}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
       </aside>
     </>
   )
