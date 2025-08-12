@@ -14,7 +14,13 @@ router.get('/recommendations', wellnessController.getRecommendations);
 // Popular exercises
 router.get('/exercises/popular', wellnessController.getPopularExercises);
 
+// Get specific exercise by ID
+router.get('/exercises/:id', wellnessController.getExerciseById);
+
 // Coping techniques
 router.get('/techniques', wellnessController.getCopingTechniques);
+
+// Get specific coping technique by ID
+router.get('/techniques/:id', wellnessController.getCopingTechniqueById);
 
 export default router;
