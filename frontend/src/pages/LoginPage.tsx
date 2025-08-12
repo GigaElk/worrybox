@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 // import { Heart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import ServiceWakeupScreen from '../components/ServiceWakeupScreen'
 import WorryBoxLogoSquare from '../assets/WorryBoxLogoSquare.png'
 
 interface LoginForm {
@@ -13,7 +14,7 @@ interface LoginForm {
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, isWakingUp } = useAuth()
   const navigate = useNavigate()
   
   const {
@@ -28,11 +29,16 @@ const LoginPage = () => {
       await login(data.email, data.password)
       toast.success('Welcome back!')
       navigate('/dashboard')
-    } catch (error) {
-      toast.error('Invalid email or password')
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show service wakeup screen if services are waking up
+  if (isWakingUp) {
+    return <ServiceWakeupScreen message="Waking up login services..." />
   }
 
   return (

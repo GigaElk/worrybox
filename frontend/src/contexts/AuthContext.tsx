@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { authService, User } from '../services/authService'
 import toast from 'react-hot-toast'
+import { isColdStartError, retryWithBackoff } from '../utils/serviceWakeup'
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+  isWakingUp: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
@@ -25,6 +27,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isWakingUp, setIsWakingUp] = useState(false)
 
   useEffect(() => {
     // Check for existing auth token on app load
@@ -48,7 +51,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await authService.login({ email, password })
+      // Check if this might be a cold start scenario
+      const loginAttempt = async () => {
+        return await authService.login({ email, password })
+      }
+
+      let response
+      
+      // If it's likely a cold start, show wakeup screen and retry
+      try {
+        response = await loginAttempt()
+      } catch (initialError: any) {
+        if (isColdStartError(initialError)) {
+          setIsWakingUp(true)
+          
+          try {
+            response = await retryWithBackoff(
+              loginAttempt,
+              3, // max retries
+              3000, // 3 second base delay
+              (attempt) => {
+                console.log(`Retrying login attempt ${attempt}...`)
+              }
+            )
+          } finally {
+            setIsWakingUp(false)
+          }
+        } else {
+          throw initialError
+        }
+      }
       
       // Store tokens
       localStorage.setItem('auth_token', response.token)
@@ -57,6 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Set user
       setUser(response.user)
     } catch (error: any) {
+      setIsWakingUp(false)
+      
       let message = 'Login failed'
       
       if (error.response?.data?.error) {
@@ -69,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           message = errorData.message || 'Login failed'
         }
+      } else if (isColdStartError(error)) {
+        message = 'Services are taking longer than expected to wake up. Please try again in a moment.'
       } else if (error.code === 'ERR_NETWORK') {
         message = 'Unable to connect to the server. Please check your internet connection and try again.'
       }
@@ -125,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user,
     isLoading,
+    isWakingUp,
     login,
     register,
     logout,
