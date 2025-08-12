@@ -105,10 +105,48 @@ const WellnessDashboard: React.FC = () => {
         <CopingTechniqueList limit={6} showViewAll={false} />
       </div>
 
-      {/* Debug Info */}
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <p>User: {user ? user.username : 'Not logged in'}</p>
-        <p>Wellness Dashboard is working!</p>
+      {/* Recommended Mental Health Resources */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">Mental Health Resources</h2>
+          <Link 
+            to="/resources" 
+            className="text-pink-600 hover:text-pink-800 text-sm font-medium"
+          >
+            View All Resources
+          </Link>
+        </div>
+        <div className="text-center py-8 text-gray-500">
+          <p>Mental health resources will be available soon.</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200 p-8 text-center">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Need Help Right Now?</h2>
+        <p className="text-gray-600 mb-6">
+          If you're feeling overwhelmed, try one of these quick techniques to help you feel better.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            to="/wellness/exercises?category=breathing"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Breathing Exercises
+          </Link>
+          <Link
+            to="/wellness/techniques?category=grounding"
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Grounding Techniques
+          </Link>
+          <Link
+            to="/wellness/techniques?category=mindfulness"
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Mindfulness
+          </Link>
+        </div>
       </div>
     </div>
   )
