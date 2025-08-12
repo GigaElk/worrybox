@@ -1,8 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, PlusCircle, Users, Settings, BarChart3, Heart, CheckCircle, BookOpen, Bell } from 'lucide-react'
+import { Home, PlusCircle, Users, Settings, BarChart3, Heart, CheckCircle, BookOpen, Bell, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
-const Sidebar = () => {
+interface SidebarProps {
+  sidebarOpen?: boolean
+  setSidebarOpen?: (open: boolean) => void
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
 
@@ -23,26 +28,52 @@ const Sidebar = () => {
   ]
 
   return (
-    <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-      <nav className="p-4 space-y-2">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
-            </Link>
-          )
-        })}
-      </nav>
+    <>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen?.(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen
+        transform transition-transform duration-300 ease-in-out lg:transform-none
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Mobile close button */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+          <span className="text-lg font-semibold text-gray-900">Menu</span>
+          <button
+            onClick={() => setSidebarOpen?.(false)}
+            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-2">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setSidebarOpen?.(false)} // Close sidebar on mobile when clicking a link
+                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
       
       {/* Quick Stats */}
       <div className="p-4 mt-8">
@@ -64,7 +95,8 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
 

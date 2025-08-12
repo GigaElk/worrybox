@@ -55,6 +55,32 @@ const NotificationBell: React.FC = () => {
     }
   }
 
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await notificationService.markNotificationAsRead(notificationId)
+      // Update local state
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, isRead: true } : n
+        )
+      )
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    }
+  }
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllNotificationsAsRead()
+      // Update local state
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, isRead: true }))
+      )
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error)
+    }
+  }
+
   if (!user) {
     return null
   }
@@ -91,11 +117,21 @@ const NotificationBell: React.FC = () => {
           <div className="px-4 py-3 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
-              {unreadCount > 0 && (
-                <span className="text-xs text-gray-500">
-                  {unreadCount} unread
-                </span>
-              )}
+              <div className="flex items-center space-x-2">
+                {unreadCount > 0 && (
+                  <>
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Mark all read
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      {unreadCount} unread
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -111,7 +147,7 @@ const NotificationBell: React.FC = () => {
                 {notifications.slice(0, 5).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 rounded-lg mb-2 transition-colors ${
+                    className={`p-3 rounded-lg mb-2 transition-colors group ${
                       notification.isRead 
                         ? 'bg-gray-50 hover:bg-gray-100' 
                         : 'bg-blue-50 hover:bg-blue-100'
@@ -129,9 +165,22 @@ const NotificationBell: React.FC = () => {
                           <span className="text-xs text-gray-500">
                             {new Date(notification.createdAt).toLocaleDateString()}
                           </span>
-                          {!notification.isRead && (
-                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                          )}
+                          <div className="flex items-center space-x-2">
+                            {!notification.isRead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  markAsRead(notification.id)
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                Mark read
+                              </button>
+                            )}
+                            {!notification.isRead && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
