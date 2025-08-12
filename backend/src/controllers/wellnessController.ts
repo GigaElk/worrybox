@@ -90,8 +90,28 @@ export class WellnessController {
           category: 'Breathing',
           duration: 3,
           difficulty: 'beginner',
-          completionCount: 1247,
-          rating: 4.8
+          steps: [
+            {
+              id: '1-1',
+              order: 1,
+              title: 'Get Comfortable',
+              content: 'Sit or lie down in a comfortable position',
+              duration: 30
+            },
+            {
+              id: '1-2',
+              order: 2,
+              title: 'Begin Breathing',
+              content: 'Inhale for 4 counts, hold for 7, exhale for 8',
+              duration: 180
+            }
+          ],
+          tags: ['breathing', 'anxiety', 'sleep'],
+          imageUrl: null,
+          videoUrl: null,
+          audioUrl: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '2',
@@ -100,8 +120,28 @@ export class WellnessController {
           category: 'Meditation',
           duration: 20,
           difficulty: 'intermediate',
-          completionCount: 892,
-          rating: 4.6
+          steps: [
+            {
+              id: '2-1',
+              order: 1,
+              title: 'Prepare',
+              content: 'Find a quiet space and lie down comfortably',
+              duration: 60
+            },
+            {
+              id: '2-2',
+              order: 2,
+              title: 'Scan Your Body',
+              content: 'Starting from your toes, slowly scan each part of your body',
+              duration: 1140
+            }
+          ],
+          tags: ['meditation', 'relaxation', 'mindfulness'],
+          imageUrl: null,
+          videoUrl: null,
+          audioUrl: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '3',
@@ -110,8 +150,21 @@ export class WellnessController {
           category: 'Grounding',
           duration: 5,
           difficulty: 'beginner',
-          completionCount: 1156,
-          rating: 4.7
+          steps: [
+            {
+              id: '3-1',
+              order: 1,
+              title: 'Observe',
+              content: 'Name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste',
+              duration: 300
+            }
+          ],
+          tags: ['grounding', 'anxiety', 'mindfulness'],
+          imageUrl: null,
+          videoUrl: null,
+          audioUrl: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }
       ];
 
