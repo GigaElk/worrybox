@@ -91,7 +91,7 @@ const WellnessDashboard: React.FC = () => {
         <ExerciseList limit={6} showViewAll={false} />
       </div>
 
-      {/* Coping Techniques */}
+      {/* Coping Techniques - Temporarily disabled for debugging */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">Coping Techniques</h2>
@@ -102,7 +102,9 @@ const WellnessDashboard: React.FC = () => {
             View All
           </Link>
         </div>
-        <CopingTechniqueList limit={6} showViewAll={false} />
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <p>Coping techniques loading...</p>
+        </div>
       </div>
 
       {/* Debug Info */}
