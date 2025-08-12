@@ -516,7 +516,7 @@ export class WellnessController {
       // TODO: Implement actual database storage
       const mockProgress = {
         id: `progress-${Date.now()}`,
-        userId: req.user.id,
+        userId: req.user.userId,
         exerciseId,
         completed: false,
         currentStep: 0,
@@ -568,7 +568,7 @@ export class WellnessController {
       // TODO: Implement actual database update
       const mockUpdatedProgress = {
         id: progressId,
-        userId: req.user.id,
+        userId: req.user.userId,
         exerciseId: 'mock-exercise-id',
         completed: completed || false,
         currentStep: currentStep || 0,
@@ -618,7 +618,7 @@ export class WellnessController {
       const mockHistory = [
         {
           id: 'progress-1',
-          userId: req.user.id,
+          userId: req.user.userId,
           exerciseId: '1',
           completed: true,
           currentStep: 2,
