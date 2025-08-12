@@ -77,7 +77,7 @@ const WellnessDashboard: React.FC = () => {
         </div>
       </FeatureGate>
 
-      {/* Recent Exercises */}
+      {/* Recent Exercises - Temporarily disabled for debugging */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">Popular Exercises</h2>
@@ -88,7 +88,9 @@ const WellnessDashboard: React.FC = () => {
             View All
           </Link>
         </div>
-        <ExerciseList limit={6} showViewAll={false} />
+        <div className="bg-orange-50 p-4 rounded-lg">
+          <p>Exercise list temporarily disabled for debugging</p>
+        </div>
       </div>
 
       {/* Coping Techniques - Temporarily disabled for debugging */}
