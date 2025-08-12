@@ -111,16 +111,19 @@ GOOGLE_AI_API_KEY=your-google-ai-api-key
 ## 🌐 API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh JWT token
 
 ### Subscriptions
+
 - `GET /api/subscriptions/tiers` - Get subscription plans
 - `POST /api/subscriptions/checkout` - Create PayPal subscription
 - `POST /api/subscriptions/cancel` - Cancel subscription
 
 ### Posts & Comments
+
 - `GET /api/posts/feed` - Get user feed
 - `POST /api/posts` - Create worry post
 - `POST /api/posts/:id/comments` - Add comment (AI moderated)
@@ -128,6 +131,7 @@ GOOGLE_AI_API_KEY=your-google-ai-api-key
 ## 🚀 Deployment
 
 The backend is configured for deployment on:
+
 - **Render.com** (recommended)
 - **Azure App Service**
 - **Any Node.js hosting platform**
@@ -143,11 +147,13 @@ See [Deployment Notes](./docs/DEPLOYMENT_NOTES.md) for detailed instructions.
 ## 🎯 Current Status
 
 ✅ **Working Features:**
+
 - PayPal subscription integration (live)
 - Google AI content moderation
 - JWT authentication with 30-day tokens
 - Database schema with PayPal support
 
 ⚠️ **In Progress:**
+
 - TypeScript compilation fixes
 - Full backend server startup
