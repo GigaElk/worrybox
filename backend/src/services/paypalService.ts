@@ -573,6 +573,31 @@ export class PayPalService {
    * Get user's current subscription
    */
   async getUserSubscription(userId: string) {
+    // Check if user has a special role that doesn't need a subscription
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    // For admin and lifetime premium users, return a virtual premium subscription
+    if (user?.role === 'ADMIN' || user?.role === 'LIFETIME_PREMIUM') {
+      return {
+        id: 'virtual-premium',
+        userId,
+        tier: 'premium',
+        status: 'active',
+        paypalSubscriptionId: null,
+        paypalPlanId: null,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        trialEndsAt: null,
+        renewsAt: null,
+        endsAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+
     return await prisma.subscription.findFirst({
       where: { 
         userId,
@@ -583,11 +608,27 @@ export class PayPalService {
   }
 
   /**
-   * Check if user has access to a feature based on their subscription
+   * Check if user has access to a feature based on their subscription and role
    */
   async hasFeatureAccess(userId: string, feature: string): Promise<boolean> {
     // MVP: Temporarily give everyone premium access while payment processing is disabled
     if (process.env.DISABLE_PAYMENTS === 'true') {
+      return true;
+    }
+
+    // Get user with role information
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    // Admin users have access to everything
+    if (user?.role === 'ADMIN') {
+      return true;
+    }
+
+    // Lifetime premium users have access to all premium features
+    if (user?.role === 'LIFETIME_PREMIUM') {
       return true;
     }
 

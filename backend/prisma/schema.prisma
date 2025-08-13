@@ -30,6 +30,11 @@ model User {
   welcomeEmailSent    Boolean   @default(false) @map("welcome_email_sent")
   welcomeEmailSentAt  DateTime? @map("welcome_email_sent_at")
   
+  // User roles and special privileges
+  role                String    @default("user") // "user", "admin", "moderator"
+  lifetimePremium     Boolean   @default(false) @map("lifetime_premium") // For winners, founders, etc.
+  lifetimePremiumReason String? @map("lifetime_premium_reason") // "founder", "contest_winner", "special_offer"
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

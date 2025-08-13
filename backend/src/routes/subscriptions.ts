@@ -15,6 +15,9 @@ router.post('/checkout', authenticateToken, subscriptionController.createCheckou
 router.post('/cancel', authenticateToken, subscriptionController.cancelSubscription);
 router.get('/features/:feature/access', authenticateToken, subscriptionController.checkFeatureAccess);
 
+// Admin routes
+router.put('/admin/users/role', authenticateToken, subscriptionController.updateUserRole);
+
 // Webhook route (no authentication needed, verified by signature)
 router.post('/webhook', subscriptionController.handleWebhook);
 
