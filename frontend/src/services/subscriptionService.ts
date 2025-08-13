@@ -27,6 +27,10 @@ export interface UserSubscription {
   updatedAt: string
 }
 
+export interface UserRole {
+  role: 'USER' | 'ADMIN' | 'LIFETIME_PREMIUM'
+}
+
 export interface FeatureAccess {
   feature: string
   hasAccess: boolean
@@ -115,5 +119,14 @@ export const subscriptionService = {
     )
     
     return results
+  },
+
+  // Update user role (Admin only)
+  async updateUserRole(userId: string, role: 'USER' | 'ADMIN' | 'LIFETIME_PREMIUM'): Promise<any> {
+    const response = await api.put('/subscriptions/admin/users/role', {
+      userId,
+      role
+    })
+    return response.data.data
   }
 }

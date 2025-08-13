@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { User, Bell, Shield, CreditCard, Globe, Save } from 'lucide-react'
+import { User, Bell, Shield, CreditCard, Globe, Save, Mail, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSubscription } from '../contexts/SubscriptionContext'
 import { userService } from '../services/userService'
+import { authService } from '../services/authService'
 import { toast } from 'react-hot-toast'
 
 interface UserSettings {
@@ -37,6 +38,7 @@ const SettingsPage: React.FC = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isResendingEmail, setIsResendingEmail] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -91,6 +93,19 @@ const SettingsPage: React.FC = () => {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleResendVerificationEmail = async () => {
+    setIsResendingEmail(true)
+    try {
+      await authService.resendVerificationEmail()
+      toast.success('Verification email sent! Check your inbox.')
+    } catch (error: any) {
+      console.error('Failed to resend verification email:', error)
+      toast.error(error.response?.data?.error?.message || 'Failed to send verification email. Please try again.')
+    } finally {
+      setIsResendingEmail(false)
+    }
   }
 
   if (!user) {
@@ -162,6 +177,62 @@ const SettingsPage: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed at this time</p>
             </div>
+          </div>
+        </div>
+
+        {/* Email Verification */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <Mail className="h-5 w-5 text-gray-500 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900">Email Verification</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center">
+                {user.emailVerified ? (
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-amber-500 mr-3" />
+                )}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {user.emailVerified ? 'Email Verified' : 'Email Not Verified'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {user.emailVerified 
+                      ? 'Your email address has been verified and you have full access to all features.'
+                      : 'Please verify your email address to access all features and receive important updates.'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              {!user.emailVerified && (
+                <button
+                  onClick={handleResendVerificationEmail}
+                  disabled={isResendingEmail}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isResendingEmail ? 'Sending...' : 'Resend Email'}
+                </button>
+              )}
+            </div>
+
+            {!user.emailVerified && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-amber-900 mb-2">Why verify your email?</h3>
+                <ul className="text-sm text-amber-800 space-y-1">
+                  <li>• Access all premium features</li>
+                  <li>• Receive important account notifications</li>
+                  <li>• Reset your password if needed</li>
+                  <li>• Get community updates and support</li>
+                </ul>
+                <p className="text-xs text-amber-700 mt-3">
+                  Check your spam folder if you don't see the email. Verification links are valid for 24 hours.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
