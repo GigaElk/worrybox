@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { RegisterRequest, LoginRequest, AuthResponse } from '../types/auth';
-import { generateTokens, generatePasswordResetToken } from '../utils/jwt';
+import { generateTokens, generatePasswordResetToken, generateEmailVerificationToken, verifyEmailVerificationToken } from '../utils/jwt';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 
 const prisma = new PrismaClient();
@@ -72,7 +72,7 @@ export class AuthService {
 
     // Send verification email (don't await to avoid blocking)
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER) {
-      const verificationToken = generatePasswordResetToken(user.id);
+      const verificationToken = generateEmailVerificationToken(user.id);
       sendVerificationEmail(user.email, verificationToken)
         .then(async () => {
           // Mark welcome email as sent
@@ -228,8 +228,7 @@ export class AuthService {
 
   async verifyEmail(token: string): Promise<void> {
     try {
-      const { verifyPasswordResetToken } = await import('../utils/jwt');
-      const { userId } = verifyPasswordResetToken(token);
+      const { userId } = verifyEmailVerificationToken(token);
 
       await prisma.user.update({
         where: { id: userId },
@@ -238,6 +237,36 @@ export class AuthService {
     } catch (error) {
       throw new Error('Invalid or expired verification token');
     }
+  }
+
+  async resendVerificationEmail(userId: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, emailVerified: true }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.emailVerified) {
+      throw new Error('Email is already verified');
+    }
+
+    // Generate new verification token
+    const verificationToken = generateEmailVerificationToken(userId);
+    
+    // Send verification email
+    await sendVerificationEmail(user.email, verificationToken);
+    
+    // Update the welcomeEmailSentAt timestamp
+    await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        welcomeEmailSentAt: new Date(),
+        welcomeEmailSent: true 
+      }
+    });
   }
 
   async getUserById(userId: string) {

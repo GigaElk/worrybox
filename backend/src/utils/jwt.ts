@@ -25,6 +25,18 @@ export const generatePasswordResetToken = (userId: string): string => {
   return jwt.sign({ userId, type: 'password-reset' }, JWT_SECRET, { expiresIn: '1h' });
 };
 
+export const generateEmailVerificationToken = (userId: string): string => {
+  return jwt.sign({ userId, type: 'email-verification' }, JWT_SECRET, { expiresIn: '24h' });
+};
+
+export const verifyEmailVerificationToken = (token: string): { userId: string } => {
+  const payload = jwt.verify(token, JWT_SECRET) as any;
+  if (payload.type !== 'email-verification') {
+    throw new Error('Invalid token type');
+  }
+  return { userId: payload.userId };
+};
+
 export const verifyPasswordResetToken = (token: string): { userId: string } => {
   const payload = jwt.verify(token, JWT_SECRET) as any;
   if (payload.type !== 'password-reset') {

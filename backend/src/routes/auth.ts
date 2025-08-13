@@ -16,6 +16,7 @@ router.get('/verify-email', authController.verifyEmail);
 // Protected routes
 router.post('/logout', authenticateToken, authController.logout);
 router.get('/profile', authenticateToken, authController.getProfile);
+router.post('/resend-verification', authenticateToken, authController.resendVerificationEmail);
 
 // Debug routes
 router.get('/check-token', authController.checkToken);

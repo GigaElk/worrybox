@@ -274,6 +274,36 @@ export class AuthController {
     }
   }
 
+  async resendVerificationEmail(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      await authService.resendVerificationEmail(req.user.userId);
+
+      res.json({
+        message: 'Verification email sent successfully',
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: {
+          code: 'RESEND_VERIFICATION_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
   async logout(req: Request, res: Response) {
     // For JWT tokens, logout is handled client-side by removing the token
     // In a more complex setup, you might maintain a blacklist of tokens

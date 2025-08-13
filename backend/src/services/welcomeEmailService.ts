@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { sendVerificationEmail } from '../utils/email';
-import { generatePasswordResetToken } from '../utils/jwt';
+import { generateEmailVerificationToken } from '../utils/jwt';
 
 const prisma = new PrismaClient();
 
@@ -43,7 +43,7 @@ export class WelcomeEmailService {
 
       for (const user of usersWithoutWelcomeEmail) {
         try {
-          const verificationToken = generatePasswordResetToken(user.id);
+          const verificationToken = generateEmailVerificationToken(user.id);
           
           // Add longer delay between emails to avoid rate limits
           if (successCount > 0) {
