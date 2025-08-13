@@ -473,44 +473,5 @@ export class AuthController {
     }
   }
 
-  async testEmail(req: Request, res: Response) {
-    try {
-      console.log('Test email request received:');
-      console.log('Headers:', req.headers);
-      console.log('Body:', req.body);
-      console.log('Raw body type:', typeof req.body);
 
-      const { email } = req.body;
-
-      if (!email) {
-        return res.status(400).json({
-          error: {
-            code: 'MISSING_EMAIL',
-            message: 'Email is required',
-          },
-          timestamp: new Date().toISOString(),
-          path: req.path,
-        });
-      }
-
-      // Send test email
-      const { sendVerificationEmail } = await import('../utils/email');
-      await sendVerificationEmail(email, 'test-token-123');
-
-      res.json({
-        message: 'Test email sent successfully',
-        data: { email }
-      });
-    } catch (error: any) {
-      console.error('Test email failed:', error);
-      res.status(500).json({
-        error: {
-          code: 'TEST_EMAIL_FAILED',
-          message: error.message,
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
-      });
-    }
-  }
 }
