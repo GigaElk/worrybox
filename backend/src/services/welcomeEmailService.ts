@@ -37,10 +37,20 @@ export class WelcomeEmailService {
 
       console.log(`📧 Found ${usersWithoutWelcomeEmail.length} users without welcome emails`);
 
-      // Send welcome emails
+      // Send welcome emails with better rate limiting and error handling
+      let successCount = 0;
+      let failureCount = 0;
+
       for (const user of usersWithoutWelcomeEmail) {
         try {
           const verificationToken = generatePasswordResetToken(user.id);
+          
+          // Add longer delay between emails to avoid rate limits
+          if (successCount > 0) {
+            console.log(`📧 Waiting 3 seconds before sending next email...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+
           await sendVerificationEmail(user.email, verificationToken);
 
           // Mark as sent
@@ -52,19 +62,33 @@ export class WelcomeEmailService {
             },
           });
 
-          console.log(`📧 Welcome email sent to ${user.email} (${user.username})`);
+          console.log(`✅ Welcome email sent to ${user.email} (${user.username})`);
+          successCount++;
           
-          // Add small delay to avoid overwhelming email service
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.error(`❌ Failed to send welcome email to ${user.email}:`, error);
+        } catch (error: any) {
+          console.error(`❌ Failed to send welcome email to ${user.email}:`, error.message || error);
+          failureCount++;
+          
+          // If it's a rate limit error (450), wait longer before continuing
+          if (error.responseCode === 450 || error.code === 'EMESSAGE') {
+            console.log(`⏳ Rate limit detected, waiting 10 seconds before continuing...`);
+            await new Promise(resolve => setTimeout(resolve, 10000));
+          }
         }
       }
 
-      console.log(`✅ Welcome email batch complete - sent to ${usersWithoutWelcomeEmail.length} users`);
+      console.log(`✅ Welcome email batch complete - ${successCount} sent, ${failureCount} failed`);
     } catch (error) {
       console.error('❌ Welcome email service error:', error);
     }
+  }
+
+  /**
+   * Retry sending welcome emails to users who failed
+   */
+  static async retryFailedWelcomeEmails(): Promise<void> {
+    console.log('🔄 Retrying failed welcome emails...');
+    await this.sendMissingWelcomeEmails();
   }
 
   /**
