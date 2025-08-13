@@ -475,6 +475,11 @@ export class AuthController {
 
   async testEmail(req: Request, res: Response) {
     try {
+      console.log('Test email request received:');
+      console.log('Headers:', req.headers);
+      console.log('Body:', req.body);
+      console.log('Raw body type:', typeof req.body);
+
       const { email } = req.body;
 
       if (!email) {
