@@ -19,6 +19,7 @@ router.get('/profile', authenticateToken, authController.getProfile);
 
 // Debug routes
 router.get('/check-token', authController.checkToken);
+router.post('/test-email', authController.testEmail);
 
 // Availability check routes (public)
 router.get('/check-email/:email', authController.checkEmailAvailability);
