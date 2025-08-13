@@ -22,6 +22,9 @@ export interface UserProfile {
   region?: string;
   city?: string;
   locationSharing?: boolean;
+  // Email tracking fields
+  welcomeEmailSent?: boolean;
+  welcomeEmailSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

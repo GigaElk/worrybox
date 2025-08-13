@@ -73,10 +73,21 @@ export class AuthService {
     // Send verification email (don't await to avoid blocking)
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER) {
       const verificationToken = generatePasswordResetToken(user.id);
-      sendVerificationEmail(user.email, verificationToken).catch(console.error);
-      console.log('📧 Verification email sent to:', user.email);
+      sendVerificationEmail(user.email, verificationToken)
+        .then(async () => {
+          // Mark welcome email as sent
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              welcomeEmailSent: true,
+              welcomeEmailSentAt: new Date(),
+            },
+          });
+          console.log('📧 Welcome email sent and tracked for:', user.email);
+        })
+        .catch(console.error);
     } else {
-      console.log('📧 Email disabled - verification email not sent');
+      console.log('📧 Email disabled - welcome email not sent');
     }
 
     return {

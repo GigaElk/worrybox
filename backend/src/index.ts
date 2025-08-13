@@ -196,7 +196,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   logger.info(`🚀 Worrybox API server running on port ${PORT}`);
   logger.info(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -215,6 +215,16 @@ app.listen(PORT, () => {
   const aiReprocessingService = AIReprocessingService.getInstance();
   aiReprocessingService.startScheduler();
   logger.info('🤖 AI reprocessing scheduler started');
+
+  // Send welcome emails to users who haven't received them (after a short delay)
+  setTimeout(async () => {
+    try {
+      const { WelcomeEmailService } = await import('./services/welcomeEmailService');
+      await WelcomeEmailService.sendMissingWelcomeEmails();
+    } catch (error) {
+      logger.error('Failed to send missing welcome emails:', error);
+    }
+  }, 5000); // 5 second delay to let everything initialize
 });
 
 // Graceful shutdown handling

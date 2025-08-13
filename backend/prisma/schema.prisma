@@ -26,6 +26,10 @@ model User {
   city            String?  // User-provided city
   locationSharing Boolean  @default(false) @map("location_sharing") // Consent for analytics
   
+  // Email tracking fields
+  welcomeEmailSent    Boolean   @default(false) @map("welcome_email_sent")
+  welcomeEmailSentAt  DateTime? @map("welcome_email_sent_at")
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
