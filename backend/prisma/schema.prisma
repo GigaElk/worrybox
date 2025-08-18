@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -88,7 +88,7 @@ model Comment {
   userId            String    @map("user_id")
   content           String
   moderationStatus  String    @default("pending") @map("moderation_status") // 'approved', 'flagged', 'rejected', 'pending'
-  moderationScore   Decimal?  @map("moderation_score") @db.Decimal(5, 2)
+  moderationScore   Decimal?  @map("moderation_score")
   parentCommentId   String?   @map("parent_comment_id")
   detectedLanguage  String?   @map("detected_language")
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -165,8 +165,8 @@ model WorryAnalysis {
   postId            String   @unique @map("post_id")
   category          String
   subcategory       String?
-  sentimentScore    Decimal? @map("sentiment_score") @db.Decimal(5, 2)
-  keywords          String?  @db.NVarChar(Max) // Comma-separated values
+  sentimentScore    Decimal? @map("sentiment_score")
+  keywords          String? // Comma-separated values
   similarWorryCount Int      @default(0) @map("similar_worry_count")
   analysisVersion   String   @default("1.0") @map("analysis_version")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -181,7 +181,7 @@ model WorryAnalysis {
 model AnalyticsCache {
   id        String   @id @default(uuid())
   cacheKey  String   @unique @map("cache_key")
-  data      String   @db.NVarChar(Max)
+  data      String
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -193,7 +193,7 @@ model WorryResolution {
   postId             String   @unique @map("post_id")
   userId             String   @map("user_id")
   resolutionStory    String?  @map("resolution_story")
-  copingMethods      String?   @map("coping_methods") @db.NVarChar(Max) // Comma-separated values
+  copingMethods      String?   @map("coping_methods") // Comma-separated values
   helpfulnessRating  Int?     @map("helpfulness_rating") // 1-5
   resolvedAt         DateTime @default(now()) @map("resolved_at")
   createdAt          DateTime @default(now()) @map("created_at")
@@ -210,7 +210,7 @@ model GuidedExercise {
   title           String
   description     String
   category        String
-  instructions    String   @db.NVarChar(Max)
+  instructions    String
   durationMinutes Int?     @map("duration_minutes")
   difficultyLevel String?  @map("difficulty_level") // 'beginner', 'intermediate', 'advanced'
   createdAt       DateTime @default(now()) @map("created_at")
@@ -263,7 +263,7 @@ model Notification {
   isRead       Boolean   @default(false) @map("is_read")
   sentAt       DateTime? @map("sent_at")
   scheduledFor DateTime? @map("scheduled_for")
-  metadata     String    @default("{}") @db.NVarChar(Max)
+  metadata     String    @default("{}")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -334,7 +334,7 @@ model WorryPrompt {
 model ModerationQueue {
   id              String    @id @default(uuid())
   commentId       String    @map("comment_id")
-  flaggedReasons  String?   @map("flagged_reasons") @db.NVarChar(Max) // Comma-separated values
+  flaggedReasons  String?   @map("flagged_reasons") // Comma-separated values
   status          String    @default("pending") // 'pending', 'reviewed'
   reviewedBy      String?   @map("reviewed_by")
   reviewedAt      DateTime? @map("reviewed_at")
@@ -374,7 +374,7 @@ model Exercise {
   duration    Int      // in minutes
   difficulty  String   // beginner, intermediate, advanced
   steps       ExerciseStep[]
-  tags        String?  @db.NVarChar(Max) // Comma-separated values
+  tags        String? // Comma-separated values
   imageUrl    String?
   videoUrl    String?
   audioUrl    String?
@@ -390,7 +390,7 @@ model ExerciseStep {
   exerciseId  String   @map("exercise_id")
   order       Int
   title       String
-  content     String   @db.NVarChar(Max)
+  content     String
   duration    Int?     // in seconds
   imageUrl    String?
   createdAt   DateTime @default(now()) @map("created_at")
@@ -407,11 +407,11 @@ model CopingTechnique {
   title             String
   description       String
   category          String
-  instructions      String     @db.NVarChar(Max)
-  whenToUse         String?  @db.NVarChar(Max) // Comma-separated values
+  instructions      String
+  whenToUse         String? // Comma-separated values
   effectiveness     Int        // 1-5 scale
   scienceBasedRating Int       @map("science_based_rating") // 1-5 scale
-  tags              String?  @db.NVarChar(Max) // Comma-separated values
+  tags              String? // Comma-separated values
   imageUrl          String?
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
@@ -461,12 +461,12 @@ model AIReprocessingQueue {
   id          String    @id @default(uuid())
   contentType String    @map("content_type") // 'comment', 'post', 'worry_analysis'
   contentId   String?   @map("content_id") // Reference to the content that needs reprocessing
-  content     String    @db.NVarChar(Max) // The actual content to reprocess
+  content     String // The actual content to reprocess
   reason      String    // 'rate_limit', 'service_unavailable', 'error'
   status      String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
   retryCount  Int       @default(0) @map("retry_count")
   lastError   String?   @map("last_error")
-  result      String?   @db.NVarChar(Max) // JSON result from successful processing
+  result      String? // JSON result from successful processing
   processedAt DateTime? @map("processed_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -480,7 +480,7 @@ model GeographicAnalytics {
   region        String?  // Anonymized region/state (optional)
   category      String   // Worry category
   subcategory   String?  // Worry subcategory
-  sentiment     Decimal  @db.Decimal(5, 2) // Average sentiment score
+  sentiment     Decimal // Average sentiment score
   count         Int      // Number of posts/worries
   period        String   // Time period (e.g., '2024-01', '2024-W01')
   periodType    String   // 'month', 'week', 'day'
