@@ -669,7 +669,9 @@ export class DiagnosticsService implements MetricsCollector {
         cwd: process.cwd(),
         execPath: process.execPath,
         argv: process.argv,
-        env: process.env,
+        env: Object.fromEntries(
+          Object.entries(process.env).filter(([_, value]) => value !== undefined)
+        ) as Record<string, string>,
       },
       memory: {
         total: os.totalmem(),

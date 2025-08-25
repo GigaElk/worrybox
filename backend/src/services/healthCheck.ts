@@ -320,7 +320,7 @@ export class HealthCheckService {
             memoryManagerStatus: status,
             trend: memoryHealthMetrics.trend,
             leakDetection: memoryHealthMetrics.leakDetection,
-            recentAlerts: memoryHealthMetrics.recentAlerts.length,
+            recentAlerts: memoryHealthMetrics.recentAlerts?.length || 0,
           },
         };
       }
@@ -352,17 +352,15 @@ export class HealthCheckService {
         };
       }
 
-      if (memoryHealthMetrics.leakDetection.suspectedLeaks.length > 0) {
-        const leak = memoryHealthMetrics.leakDetection.suspectedLeaks[0];
+      if (memoryHealthMetrics.leakDetection.detected) {
         return {
           status: 'warn',
-          message: `Potential memory leak detected (${leak.confidence}% confidence)`,
+          message: `Potential memory leak detected (${memoryHealthMetrics.leakDetection.confidence}% confidence)`,
           lastChecked: new Date().toISOString(),
           details: {
             ...memoryMetrics,
             memoryManagerStatus: status,
             leakDetection: memoryHealthMetrics.leakDetection,
-            leakDetails: leak,
           },
         };
       }
@@ -525,7 +523,7 @@ export class HealthCheckService {
         usagePercent: Math.round(usagePercent * 100) / 100,
         gcCount: memoryHealthMetrics.gcStats.totalCollections,
         gcDuration: memoryHealthMetrics.gcStats.totalDuration,
-        memoryLeakDetected: memoryHealthMetrics.leakDetection.suspectedLeaks.length > 0,
+        memoryLeakDetected: memoryHealthMetrics.leakDetection.detected,
       };
     } catch (error) {
       // Fallback to basic metrics if memory manager is not available

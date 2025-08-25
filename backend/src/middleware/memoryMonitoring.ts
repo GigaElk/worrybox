@@ -37,8 +37,8 @@ export class MemoryMonitoringMiddleware {
       };
 
       // Override res.end to capture final memory state
-      const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]) {
+      const originalEnd = res.end.bind(res);
+      res.end = function(this: Response, ...args: any[]): any {
         try {
           if (req.memorySnapshot) {
             req.memorySnapshot.end = memoryManager.getCurrentMemoryUsage();
@@ -70,8 +70,8 @@ export class MemoryMonitoringMiddleware {
           });
         }
 
-        return originalEnd.apply(this, args);
-      };
+        return originalEnd(...args);
+      } as any;
 
       // Reference to memory manager for the closure
       const memoryManager = this.memoryManager;

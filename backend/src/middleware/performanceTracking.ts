@@ -98,7 +98,8 @@ export class PerformanceTrackingMiddleware {
 
       // Override res.end to capture completion metrics
       const originalEnd = res.end;
-      res.end = (...args: any[]) => {
+      const self = this; // Capture middleware instance
+      res.end = function(this: Response, ...args: any[]) {
         const endTime = Date.now();
         const duration = endTime - startTime;
         const endCpuUsage = process.cpuUsage(startCpuUsage);
@@ -115,7 +116,7 @@ export class PerformanceTrackingMiddleware {
         const memoryDelta = endMemoryUsage.heapUsed - startMemoryUsage.heapUsed;
 
         // Log request completion
-        const logLevel = this.getLogLevel(duration, res.statusCode);
+        const logLevel = self.getLogLevel(duration, res.statusCode);
         const logData = {
           requestId,
           method: req.method,
@@ -133,16 +134,16 @@ export class PerformanceTrackingMiddleware {
         logger[logLevel]('Request completed', logData);
 
         // Track performance metrics
-        this.trackRequestMetrics(metrics, cpuUsed, memoryDelta);
+        self.trackRequestMetrics(metrics, cpuUsed, memoryDelta);
 
         // Check for performance issues
-        this.checkPerformanceIssues(metrics, cpuUsed, memoryDelta);
+        self.checkPerformanceIssues(metrics, cpuUsed, memoryDelta);
 
         // Clean up
-        this.activeRequests.delete(requestId);
+        self.activeRequests.delete(requestId);
 
         // Call original end method
-        return originalEnd.apply(res, args);
+        return (originalEnd as any).apply(this, args);
       };
 
       next();
