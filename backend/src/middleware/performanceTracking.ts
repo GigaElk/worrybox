@@ -387,6 +387,11 @@ export function createPerformanceMiddleware() {
     trackPerformance: tracker.trackPerformance(),
     trackEndpointPerformance: tracker.trackEndpointPerformance(),
     addPerformanceHeaders: tracker.addPerformanceHeaders(),
+    addCorrelationId: () => tracker.trackPerformance(), // Alias for compatibility
+    requestTimeout: (timeout: number) => (req: any, res: any, next: any) => {
+      req.setTimeout(timeout);
+      next();
+    },
     getStats: () => tracker.getPerformanceStats(),
     getActiveRequests: () => tracker.getActiveRequests(),
     resetStats: () => tracker.resetStats(),

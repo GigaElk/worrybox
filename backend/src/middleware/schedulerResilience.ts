@@ -70,6 +70,7 @@ export class SchedulerResilienceMiddleware {
       // Monitor for scheduler-related performance issues
       const startTime = Date.now();
 
+      const schedulerService = this.schedulerResilience;
       const originalEnd = res.end;
       res.end = function(this: Response, ...args: any[]) {
         try {
@@ -77,7 +78,7 @@ export class SchedulerResilienceMiddleware {
           
           // Log slow requests that might be affected by scheduler activity
           if (duration > 5000) { // 5 seconds
-            const allHealth = schedulerResilience.getAllHealth();
+            const allHealth = schedulerService.getAllHealth();
             const activeSchedulers = allHealth.filter(h => h.status === 'healthy').length;
             
             logger.warn('Slow request detected during scheduler activity', {

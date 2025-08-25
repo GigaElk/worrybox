@@ -207,8 +207,8 @@ export class MemoryMonitorUtil {
       logger.info('Test 2: Force garbage collection');
       const gcAction = await this.memoryManager.forceGarbageCollection('test');
       logger.info('GC result:', { 
-        success: gcAction.success, 
-        memoryFreed: Math.round((gcAction.memoryBefore - gcAction.memoryAfter) / 1024 / 1024) 
+        success: gcAction > 0, 
+        memoryFreed: Math.round(gcAction / 1024 / 1024) 
       });
 
       // Test 3: Memory pressure simulation

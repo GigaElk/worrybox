@@ -351,6 +351,35 @@ export class MemoryManagerService {
   }
 
   /**
+   * Get memory statistics (alias for compatibility)
+   */
+  async getMemoryStats(): Promise<any> {
+    return this.getMemoryHealthReport();
+  }
+
+  /**
+   * Get health metrics (alias for compatibility)
+   */
+  getHealthMetrics(): any {
+    return this.getMemoryHealthReport();
+  }
+
+  /**
+   * Check memory pressure (alias for compatibility)
+   */
+  checkMemoryPressure(): boolean {
+    const usage = this.getCurrentMemoryUsage();
+    return usage.heapUsed / usage.heapTotal > 0.8;
+  }
+
+  /**
+   * Force garbage collection (alias for compatibility)
+   */
+  forceGarbageCollection(trigger?: string): Promise<number> {
+    return this.triggerGarbageCollection(trigger);
+  }
+
+  /**
    * Get memory health report
    */
   getMemoryHealthReport(): MemoryHealthReport {
@@ -444,7 +473,7 @@ export class MemoryManagerService {
     // Monitor garbage collection if available
     if (global.gc) {
       const originalGC = global.gc;
-      global.gc = () => {
+      global.gc = (() => {
         const startTime = Date.now();
         const beforeMemory = this.getCurrentMemoryUsage();
         
@@ -464,7 +493,7 @@ export class MemoryManagerService {
         };
         
         this.recordGCEvent(gcEvent);
-      };
+      }) as any;
     }
   }
 

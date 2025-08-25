@@ -260,7 +260,7 @@ export class StartupHealthValidator {
           const config = this.platformAdapter.getOptimalConfig();
           
           const heapUsedMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
-          const memoryLimit = config.maxMemoryMB;
+          const memoryLimit = config.memoryLimit;
           const usagePercentage = (heapUsedMB / memoryLimit) * 100;
           
           const duration = Date.now() - startTime;
@@ -334,7 +334,7 @@ export class StartupHealthValidator {
           }
           
           // Check if running on unknown platform
-          if (platform === 'unknown') {
+          if (platform === ('unknown' as any)) {
             issues.push('Platform detection failed');
           }
           

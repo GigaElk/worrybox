@@ -740,7 +740,7 @@ class SchedulerResilienceService implements SchedulerManager {
     const cronJob = this.cronJobs.get(schedulerName);
     if (cronJob) {
       cronJob.stop();
-      cronJob.destroy();
+      // ScheduledTask from node-cron doesn't have destroy method, stop() is sufficient
       this.cronJobs.delete(schedulerName);
     }
 

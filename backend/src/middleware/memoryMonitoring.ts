@@ -347,5 +347,27 @@ export class MemoryMonitoringMiddleware {
   }
 }
 
+/**
+ * Factory function to create memory monitoring middleware
+ */
+export function createMemoryMonitoring() {
+  const monitor = new MemoryMonitoringMiddleware();
+  
+  return {
+    addMemoryHeaders: () => monitor.trackMemoryUsage(),
+    monitorRequestMemory: () => monitor.trackMemoryUsage(),
+    handleMemoryPressure: () => monitor.checkMemoryPressure(),
+    proactiveMemoryManagement: () => monitor.checkMemoryPressure(),
+    memoryHealthEndpoint: () => monitor.memoryHealthEndpoint(),
+    memoryMetricsEndpoint: () => monitor.memoryMetricsEndpoint(),
+    memoryLeakEndpoint: () => monitor.createHeapSnapshotEndpoint(),
+    forceGcEndpoint: () => monitor.triggerGCEndpoint(),
+    emergencyCleanupEndpoint: () => monitor.emergencyCleanupEndpoint(),
+    handleMemoryErrors: () => monitor.handleMemoryErrors(),
+  };
+}
+
+export default MemoryMonitoringMiddleware;
+
 // Export singleton instance
 export const memoryMonitoringMiddleware = new MemoryMonitoringMiddleware();

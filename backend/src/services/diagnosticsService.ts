@@ -584,16 +584,23 @@ export class DiagnosticsService implements MetricsCollector {
     
     return {
       overall: healthStatus.status,
-      components: healthStatus.checks.map(check => ({
-        name: check.name,
+      components: Object.entries(healthStatus.checks).map(([name, check]) => ({
+        name,
         status: check.status === 'pass' ? 'healthy' : check.status === 'warn' ? 'degraded' : 'unhealthy',
-        lastCheck: check.timestamp,
-        responseTime: check.duration,
+        lastCheck: check.lastChecked,
+        responseTime: check.responseTime || 0,
         errorRate: 0,
-        message: check.output,
+        message: check.message,
         dependencies: [],
       })),
-      checks: healthStatus.checks,
+      checks: Object.entries(healthStatus.checks).map(([name, check]) => ({
+        name,
+        status: check.status,
+        duration: check.responseTime || 0,
+        timestamp: check.lastChecked,
+        output: check.message,
+        details: check.details,
+      })),
       lastFullCheck: healthStatus.timestamp,
       uptime: Math.floor((Date.now() - this.startTime.getTime()) / 1000),
       availability: 100, // Would need historical calculation
@@ -623,7 +630,7 @@ export class DiagnosticsService implements MetricsCollector {
         },
       } : undefined,
       limits: {
-        memory: config.maxMemoryMB,
+        memory: config.memoryLimit,
         cpu: 1, // Render typically provides 1 CPU
         storage: 1000, // GB
         connections: config.maxConnections,
@@ -631,7 +638,7 @@ export class DiagnosticsService implements MetricsCollector {
       },
       usage: {
         memory: Math.round(process.memoryUsage().rss / 1024 / 1024),
-        memoryPercentage: Math.round((process.memoryUsage().rss / 1024 / 1024 / config.maxMemoryMB) * 100),
+        memoryPercentage: Math.round((process.memoryUsage().rss / 1024 / 1024 / config.memoryLimit) * 100),
         cpu: 0, // Would need calculation
         storage: 0, // Would need calculation
         storagePercentage: 0,

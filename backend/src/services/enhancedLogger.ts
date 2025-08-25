@@ -10,6 +10,7 @@ interface LogContext {
   requestId?: string;
   endpoint?: string;
   method?: string;
+  path?: string;
   ip?: string;
   userAgent?: string;
   duration?: number;
@@ -17,7 +18,35 @@ interface LogContext {
   cpuUsage?: number;
   errorCode?: string;
   stackTrace?: string;
+  port?: number;
+  operation?: string;
+  timerId?: string;
+  category?: string;
+  logLevel?: string;
+  newLevel?: string;
+  originalLevel?: string;
+  revertedLevel?: string;
+  enableApiKeyAuth?: boolean;
+  enableAdminRoleAuth?: boolean;
+  hasApiKey?: boolean;
+  user?: string;
+  memoryDelta?: number;
+  platform?: string;
+  systemState?: any;
   metadata?: Record<string, any>;
+  // Additional properties for reliability enhancements
+  environment?: string;
+  memoryBefore?: number;
+  memoryAfter?: number;
+  enableIPWhitelist?: boolean;
+  hasAuth?: boolean;
+  cpuUsed?: number;
+  nodeVersion?: string;
+  apiKeyCount?: number;
+  severity?: string;
+  frontendUrl?: string;
+  allowedIPCount?: number;
+  loggingConfig?: any;
 }
 
 interface PerformanceLogData {
@@ -41,6 +70,7 @@ interface SystemStateLogData {
   memoryUsage: NodeJS.MemoryUsage;
   cpuUsage: NodeJS.CpuUsage;
   uptime: number;
+  timestamp?: string;
   activeConnections?: number;
   queuedOperations?: number;
   errorRate?: number;
@@ -61,8 +91,8 @@ interface LogMetrics {
   }>;
 }
 
-export class EnhancedLogger {
-  private static instance: EnhancedLogger;
+class EnhancedLoggerClass {
+  private static instance: EnhancedLoggerClass;
   private logger: winston.Logger;
   private correlationService: CorrelationService;
   private platformAdapter: PlatformAdapterService;
@@ -103,11 +133,11 @@ export class EnhancedLogger {
     this.setupMetricsCollection();
   }
 
-  public static getInstance(): EnhancedLogger {
-    if (!EnhancedLogger.instance) {
-      EnhancedLogger.instance = new EnhancedLogger();
+  public static getInstance(): EnhancedLoggerClass {
+    if (!EnhancedLoggerClass.instance) {
+      EnhancedLoggerClass.instance = new EnhancedLoggerClass();
     }
-    return EnhancedLogger.instance;
+    return EnhancedLoggerClass.instance;
   }
 
   /**
@@ -373,7 +403,7 @@ export class EnhancedLogger {
       winston.format.colorize({ all: true }),
       winston.format.printf((info) => {
         const { timestamp, level, message, correlationId, ...meta } = info;
-        const correlation = correlationId ? `[${correlationId.slice(-8)}]` : '';
+        const correlation = correlationId ? `[${String(correlationId).slice(-8)}]` : '';
         const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
         return `${timestamp} ${level}: ${correlation} ${message}${metaStr}`;
       })
@@ -478,7 +508,7 @@ export class EnhancedLogger {
  */
 class ChildLogger {
   constructor(
-    private parent: EnhancedLogger,
+    private parent: EnhancedLoggerClass,
     private context: LogContext
   ) {}
 
@@ -512,11 +542,11 @@ class ChildLogger {
 }
 
 // Create and export the enhanced logger instance
-const enhancedLogger = EnhancedLogger.getInstance();
+const enhancedLogger = EnhancedLoggerClass.getInstance();
 
 // Export both the enhanced logger and a simplified interface for backward compatibility
 export default enhancedLogger;
-export { EnhancedLogger, ChildLogger };
+export { EnhancedLoggerClass as EnhancedLogger, ChildLogger };
 
 // Create a stream for Morgan HTTP logging
 export const morganStream = {

@@ -374,6 +374,13 @@ export class PlatformAdapterService {
   }
 
   /**
+   * Get optimal configuration (alias for compatibility)
+   */
+  getOptimalConfig(): PlatformConfig {
+    return this.getConfig();
+  }
+
+  /**
    * Get current platform configuration
    */
   getConfig(): PlatformConfig {

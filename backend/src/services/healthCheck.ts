@@ -84,11 +84,26 @@ export class HealthCheckService {
         version: process.env.npm_package_version || '1.0.0',
         environment: process.env.NODE_ENV || 'development',
         checks: {
-          database: { status: 'fail', message: 'Health check error' },
-          memory: { status: 'fail', message: 'Health check error' },
+          database: { status: 'fail', message: 'Health check error', lastChecked: new Date().toISOString() },
+          memory: { status: 'fail', message: 'Health check error', lastChecked: new Date().toISOString() },
         },
       };
     }
+  }
+
+  /**
+   * Get detailed health (alias for compatibility)
+   */
+  async getDetailedHealth(): Promise<EnhancedHealthStatus> {
+    return this.performEnhancedHealthCheck();
+  }
+
+  /**
+   * Initialize health check service
+   */
+  async initialize(): Promise<void> {
+    // Health check service is already initialized
+    return Promise.resolve();
   }
 
   /**
@@ -645,7 +660,7 @@ export class HealthCheckService {
     // Only available if Node.js is started with --expose-gc flag
     if (global.gc) {
       const originalGC = global.gc;
-      global.gc = () => {
+      global.gc = (() => {
         const start = Date.now();
         originalGC();
         const duration = Date.now() - start;
@@ -658,7 +673,7 @@ export class HealthCheckService {
           totalGCs: this.gcStats.count,
           averageDuration: Math.round(this.gcStats.totalDuration / this.gcStats.count),
         });
-      };
+      }) as any;
     }
   }
 }

@@ -342,7 +342,7 @@ export class StartupOptimizer {
         await Promise.resolve();
       },
       healthCheck: async () => {
-        return this.platformAdapter.getPlatform() !== 'unknown';
+        return this.platformAdapter.getPlatform() !== ('unknown' as any);
       },
       timeout: 1000,
       retryCount: 1,
@@ -581,7 +581,7 @@ export class StartupOptimizer {
 
     // Trigger garbage collection if memory usage is high
     const memoryUsageMB = Math.round(currentMemory.heapUsed / 1024 / 1024);
-    const memoryLimit = this.platformAdapter.getOptimalConfig().maxMemoryMB;
+    const memoryLimit = this.platformAdapter.getOptimalConfig().memoryLimit;
     
     if (memoryUsageMB > memoryLimit * 0.7) { // 70% of limit
       logger.info('High memory usage detected, triggering garbage collection', {

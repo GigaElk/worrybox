@@ -464,7 +464,10 @@ export class GracefulShutdownService {
       const phaseMetric = {
         name: phase.name,
         startTime: phaseStartTime,
+        endTime: 0,
+        duration: 0,
         success: false,
+        error: undefined as string | undefined,
       };
 
       this.shutdownMetrics!.phases.push(phaseMetric);

@@ -63,8 +63,8 @@ router.get('/health', async (req: Request, res: Response) => {
   try {
     const health = await healthCheck.getDetailedHealth();
     
-    const statusCode = health.status === 'pass' ? 200 : 
-                      health.status === 'warn' ? 200 : 503;
+    const statusCode = health.status === 'healthy' ? 200 : 
+                      health.status === 'degraded' ? 200 : 503;
     
     res.status(statusCode).json({
       status: health.status,
