@@ -38,6 +38,30 @@ app.use(
 // Rate limiting - temporarily disabled due to dependency issues
 console.log("🔓 Rate limiting disabled for now");
 
+// Import all middleware and services first
+import { createPerformanceMiddleware } from "./middleware/performanceTracking";
+import { createMemoryMonitoring } from "./middleware/memoryMonitoring";
+import { platformOptimization } from "./middleware/platformOptimization";
+import { databaseRecoveryMiddleware } from "./middleware/databaseRecovery";
+import { schedulerResilienceMiddleware } from "./middleware/schedulerResilience";
+import { errorHandlingMiddleware } from "./middleware/errorHandling";
+import { createComprehensiveLogging } from "./middleware/comprehensiveLogging";
+import { SchedulerMonitorService } from "./services/schedulerMonitor";
+import { SchedulerResilienceService } from "./services/schedulerResilience";
+import { ErrorHandlingService } from "./services/errorHandling";
+import { DiagnosticsService } from "./services/diagnosticsService";
+import { StartupOptimizer } from "./services/startupOptimizer";
+import { LazyLoader } from "./services/lazyLoader";
+import { StartupHealthValidator } from "./services/startupHealthValidator";
+import { EnhancedLogger } from "./services/enhancedLogger";
+import { PerformanceMonitor } from "./services/performanceMonitor";
+import { LoggingConfigManager } from "./services/loggingConfig";
+import { gracefulShutdown } from "./services/gracefulShutdown";
+import { PlatformAdapterService } from "./services/platformAdapter";
+import { RenderOptimizationService } from "./services/renderOptimizations";
+import { MemoryManagerService } from "./services/memoryManager";
+import { DatabaseConnection } from "./utils/databaseConnection";
+
 // Enhanced comprehensive logging middleware
 const comprehensiveLogging = createComprehensiveLogging();
 app.use(comprehensiveLogging.comprehensiveLogging);
@@ -50,30 +74,6 @@ app.use(morgan("combined", { stream: morganStream }));
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
-
-// Import performance tracking middleware
-import { createPerformanceMiddleware } from "./middleware/performanceTracking";
-import { createMemoryMonitoring } from "./middleware/memoryMonitoring";
-import { platformOptimization } from "./middleware/platformOptimization";
-import { databaseRecoveryMiddleware } from "./middleware/databaseRecovery";
-import { schedulerResilienceMiddleware } from "./middleware/schedulerResilience";
-import { errorHandlingMiddleware } from "./middleware/errorHandling";
-import { SchedulerMonitorService } from "./services/schedulerMonitor";
-import { SchedulerResilienceService } from "./services/schedulerResilience";
-import { ErrorHandlingService } from "./services/errorHandling";
-import { DiagnosticsService } from "./services/diagnosticsService";
-import { StartupOptimizer } from "./services/startupOptimizer";
-import { LazyLoader } from "./services/lazyLoader";
-import { StartupHealthValidator } from "./services/startupHealthValidator";
-import { EnhancedLogger } from "./services/enhancedLogger";
-import { PerformanceMonitor } from "./services/performanceMonitor";
-import { LoggingConfigManager } from "./services/loggingConfig";
-import { createComprehensiveLogging } from "./middleware/comprehensiveLogging";
-import { gracefulShutdown } from "./services/gracefulShutdown";
-import { PlatformAdapterService } from "./services/platformAdapter";
-import { RenderOptimizationService } from "./services/renderOptimizations";
-import { MemoryManagerService } from "./services/memoryManager";
-import { DatabaseConnection } from "./utils/databaseConnection";
 
 // Initialize platform adapter and optimizations
 const platformAdapter = PlatformAdapterService.getInstance();
