@@ -1,94 +1,190 @@
 import { PrismaClient } from '@prisma/client';
+import { DatabaseRecoveryService } from '../services/databaseRecovery';
 import logger from '../services/logger';
 
 export class DatabaseConnection {
   private static instance: PrismaClient | null = null;
-  private static retryCount = 0;
-  private static maxRetries = 10;
-  private static retryDelay = 5000; // 5 seconds
+  private static recoveryService: DatabaseRecoveryService;
+  private static isInitialized = false;
 
+  /**
+   * Initialize the database connection with recovery service
+   */
+  static async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    this.recoveryService = DatabaseRecoveryService.getInstance();
+    await this.recoveryService.initialize();
+    this.isInitialized = true;
+    
+    logger.info('Database connection initialized with recovery service');
+  }
+
+  /**
+   * Get database instance with automatic recovery
+   */
   static async getInstance(): Promise<PrismaClient> {
-    if (this.instance) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    try {
+      this.instance = await this.recoveryService.getConnection();
       return this.instance;
-    }
-
-    return this.createConnection();
-  }
-
-  private static async createConnection(): Promise<PrismaClient> {
-    const prisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
-    });
-
-    try {
-      // Test the connection
-      await this.testConnection(prisma);
-      
-      this.instance = prisma;
-      this.retryCount = 0; // Reset retry count on successful connection
-      logger.info('✅ Database connected successfully');
-      
-      return prisma;
     } catch (error) {
-      logger.error(`❌ Database connection failed (attempt ${this.retryCount + 1}/${this.maxRetries}):`, error);
-      
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        logger.info(`🔄 Retrying database connection in ${this.retryDelay / 1000} seconds...`);
-        
-        await this.sleep(this.retryDelay);
-        return this.createConnection(); // Recursive retry
-      } else {
-        logger.error('💥 Max database connection retries exceeded. App will continue but database operations may fail.');
-        // Don't throw error - let app start but log the issue
-        this.instance = prisma; // Still return prisma instance for graceful degradation
-        return prisma;
-      }
+      logger.error('Failed to get database connection', error);
+      throw error;
     }
   }
 
-  private static async testConnection(prisma: PrismaClient): Promise<void> {
-    await prisma.$queryRaw`SELECT 1`;
-  }
-
-  private static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  static async disconnect(): Promise<void> {
-    if (this.instance) {
-      await this.instance.$disconnect();
-      this.instance = null;
-      logger.info('🔌 Database disconnected');
+  /**
+   * Execute database operation with automatic retry and recovery
+   */
+  static async executeOperation<T>(
+    operation: () => Promise<T>,
+    correlationId?: string
+  ): Promise<T> {
+    if (!this.isInitialized) {
+      await this.initialize();
     }
+
+    return this.recoveryService.executeOperation(operation, {
+      correlationId,
+      operationType: 'query',
+    });
   }
 
-  // Health check method
+  /**
+   * Execute database transaction with recovery
+   */
+  static async executeTransaction<T>(
+    operation: (prisma: PrismaClient) => Promise<T>,
+    correlationId?: string
+  ): Promise<T> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    return this.recoveryService.executeOperation(async () => {
+      const prisma = await this.getInstance();
+      return prisma.$transaction(async (tx) => {
+        return operation(tx as PrismaClient);
+      });
+    }, {
+      correlationId,
+      operationType: 'transaction',
+    });
+  }
+
+  /**
+   * Health check with recovery service metrics
+   */
   static async isHealthy(): Promise<boolean> {
-    try {
-      if (!this.instance) {
+    if (!this.isInitialized) {
+      try {
+        await this.initialize();
+      } catch (error) {
         return false;
       }
-      await this.testConnection(this.instance);
-      return true;
+    }
+
+    try {
+      const metrics = this.recoveryService.getHealthMetrics();
+      return metrics.connectionStatus === 'connected' && 
+             metrics.poolMetrics.poolHealth !== 'unhealthy';
     } catch (error) {
       logger.error('Database health check failed:', error);
       return false;
     }
   }
 
-  // Retry connection if it's lost
-  static async ensureConnection(): Promise<PrismaClient> {
+  /**
+   * Get detailed database health metrics
+   */
+  static getHealthMetrics() {
+    if (!this.isInitialized || !this.recoveryService) {
+      return null;
+    }
+
+    return this.recoveryService.getHealthMetrics();
+  }
+
+  /**
+   * Force database recovery
+   */
+  static async forceRecovery(): Promise<boolean> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    return this.recoveryService.forceRecovery();
+  }
+
+  /**
+   * Reset database connections (for error recovery)
+   */
+  static async resetConnections(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    logger.info('Resetting database connections for error recovery');
+    
     try {
+      // Disconnect current instance
       if (this.instance) {
-        await this.testConnection(this.instance);
-        return this.instance;
+        await this.instance.$disconnect();
+        this.instance = null;
       }
+      
+      // Force recovery through recovery service
+      await this.recoveryService.forceRecovery();
+      
+      logger.info('Database connections reset successfully');
     } catch (error) {
-      logger.warn('Database connection lost, attempting to reconnect...');
-      this.instance = null; // Reset instance to force reconnection
+      logger.error('Failed to reset database connections', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ensure connection is available (legacy compatibility)
+   */
+  static async ensureConnection(): Promise<PrismaClient> {
+    return this.getInstance();
+  }
+
+  /**
+   * Disconnect and cleanup
+   */
+  static async disconnect(): Promise<void> {
+    if (this.recoveryService) {
+      await this.recoveryService.cleanup();
     }
     
-    return this.createConnection();
+    if (this.instance) {
+      await this.instance.$disconnect();
+      this.instance = null;
+    }
+    
+    this.isInitialized = false;
+    logger.info('🔌 Database disconnected and cleaned up');
+  }
+
+  // Legacy methods for backward compatibility
+  
+  private static async createConnection(): Promise<PrismaClient> {
+    return this.getInstance();
+  }
+
+  private static async testConnection(prisma?: PrismaClient): Promise<void> {
+    const connection = prisma || await this.getInstance();
+    await connection.$queryRaw`SELECT 1`;
+  }
+
+  private static sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

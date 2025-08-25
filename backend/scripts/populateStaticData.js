@@ -14,16 +14,9 @@ async function populateStaticData() {
     // Worry Prompts
     console.log('📝 Adding worry prompts...');
     const worryPrompts = [
-      { text: "What's been weighing on your mind lately?", sortOrder: 1 },
-      { text: "What worry kept you up last night?", sortOrder: 2 },
-      { text: "What's making you feel anxious today?", sortOrder: 3 },
-      { text: "What's been bothering you this week?", sortOrder: 4 },
-      { text: "What fear has been holding you back?", sortOrder: 5 },
-      { text: "What situation is causing you stress?", sortOrder: 6 },
-      { text: "What's been on your mind that you can't shake?", sortOrder: 7 },
-      { text: "What concern has been growing lately?", sortOrder: 8 },
-      { text: "What's making you feel overwhelmed?", sortOrder: 9 },
-      { text: "What worry would you like to share today?", sortOrder: 10 }
+      { text: "I am worried about...", sortOrder: 1 },
+      { text: "I am worried that...", sortOrder: 2 },
+      { text: "What if...", sortOrder: 3 }
     ];
 
     for (const prompt of worryPrompts) {
