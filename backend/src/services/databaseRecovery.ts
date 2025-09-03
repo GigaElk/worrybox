@@ -304,6 +304,9 @@ export class DatabaseRecoveryService {
     logger.info('Creating database connection');
     
     try {
+      console.log('--- DATABASE_URL FROM ENV ---');
+      console.log(process.env.DATABASE_URL);
+      console.log('-----------------------------');
       this.prismaClient = new PrismaClient({
         log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
         datasources: {
