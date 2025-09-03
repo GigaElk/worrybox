@@ -54,4 +54,13 @@ export class CorrelationService {
     
     return patterns.some(pattern => pattern.test(id));
   }
+
+  /**
+   * Set correlation ID for current context (for logging consistency)
+   */
+  setCorrelationId(id: string): void {
+    // This method is used by logging middleware to ensure consistency
+    // In a more complex setup, this might store the ID in async local storage
+    // For now, it's a no-op since we pass the ID explicitly to logging methods
+  }
 }

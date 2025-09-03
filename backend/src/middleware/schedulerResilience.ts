@@ -71,8 +71,8 @@ export class SchedulerResilienceMiddleware {
       const startTime = Date.now();
 
       const schedulerService = this.schedulerResilience;
-      const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]) {
+      const originalEnd = res.end.bind(res);
+      res.end = function(this: Response, ...args: any[]): any {
         try {
           const duration = Date.now() - startTime;
           
@@ -102,8 +102,8 @@ export class SchedulerResilienceMiddleware {
           });
         }
 
-        return originalEnd.apply(this, args);
-      };
+        return originalEnd(...args);
+      } as any;
 
       next();
     };

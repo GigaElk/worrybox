@@ -31,7 +31,7 @@ export class PostService {
       },
     });
 
-    return this.formatPostResponse(post);
+    return await this.formatPostResponse(post, userId);
   }
 
   async updatePost(postId: string, userId: string, data: UpdatePostRequest): Promise<PostResponse> {
@@ -69,7 +69,7 @@ export class PostService {
       },
     });
 
-    return this.formatPostResponse(updatedPost);
+    return await this.formatPostResponse(updatedPost, userId);
   }
 
   async addBlogContent(postId: string, userId: string, longContent: string): Promise<PostResponse> {
@@ -103,7 +103,7 @@ export class PostService {
       },
     });
 
-    return this.formatPostResponse(updatedPost);
+    return await this.formatPostResponse(updatedPost, userId);
   }
 
   async removeBlogContent(postId: string, userId: string): Promise<PostResponse> {
@@ -137,7 +137,7 @@ export class PostService {
       },
     });
 
-    return this.formatPostResponse(updatedPost);
+    return await this.formatPostResponse(updatedPost, userId);
   }
 
   async deletePost(postId: string, userId: string): Promise<void> {
@@ -182,7 +182,7 @@ export class PostService {
       return null;
     }
 
-    return this.formatPostResponse(post);
+    return await this.formatPostResponse(post, requestingUserId);
   }
 
   async getPosts(query: PostsQuery, requestingUserId?: string): Promise<PostsResponse> {
@@ -243,8 +243,10 @@ export class PostService {
     );
     const filteredPosts = visiblePosts.filter(post => post !== null);
 
+    const formattedPosts = await this.formatMultiplePostResponses(filteredPosts, requestingUserId);
+
     return {
-      posts: filteredPosts.map(post => this.formatPostResponse(post)),
+      posts: formattedPosts,
       total,
       hasMore: offset + posts.length < total,
     };
@@ -303,8 +305,10 @@ export class PostService {
       }),
     ]);
 
+    const formattedPosts = await this.formatMultiplePostResponses(posts, userId);
+
     return {
-      posts: posts.map(post => this.formatPostResponse(post)),
+      posts: formattedPosts,
       total,
       hasMore: offset + posts.length < total,
     };
@@ -357,8 +361,10 @@ export class PostService {
       }),
     ]);
 
+    const formattedPosts = await this.formatMultiplePostResponses(posts, userId);
+
     return {
-      posts: posts.map(post => this.formatPostResponse(post)),
+      posts: formattedPosts,
       total,
       hasMore: offset + posts.length < total,
     };
@@ -451,7 +457,10 @@ export class PostService {
     };
   }
 
-  private formatPostResponse(post: any): PostResponse {
+  private async formatPostResponse(post: any, requestingUserId?: string): Promise<PostResponse> {
+    // Get interaction counts and user status
+    const interactionData = await this.getPostInteractionData(post.id, requestingUserId);
+
     return {
       id: post.id,
       userId: post.userId,
@@ -472,6 +481,218 @@ export class PostService {
         displayName: post.user.displayName || undefined,
         avatarUrl: post.user.avatarUrl || undefined,
       },
+      ...interactionData,
     };
+  }
+
+  // Optimized method for formatting multiple posts with batch interaction data fetching
+  private async formatMultiplePostResponses(posts: any[], requestingUserId?: string): Promise<PostResponse[]> {
+    if (posts.length === 0) return [];
+
+    // Extract all post IDs for batch processing
+    const postIds = posts.map(post => post.id);
+
+    // Batch fetch all interaction data to reduce database queries
+    const batchInteractionData = await this.getBatchPostInteractionData(postIds, requestingUserId);
+
+    // Format each post with its corresponding interaction data
+    return posts.map(post => {
+      const interactionData = batchInteractionData[post.id] || {
+        supportCount: 0,
+        meTooCount: 0,
+        similarWorryCount: 0,
+        userHasShownSupport: requestingUserId ? false : undefined,
+        userHasMeToo: requestingUserId ? false : undefined,
+      };
+
+      return {
+        id: post.id,
+        userId: post.userId,
+        shortContent: post.shortContent,
+        longContent: post.longContent || undefined,
+        worryPrompt: post.worryPrompt,
+        privacyLevel: post.privacyLevel,
+        commentsEnabled: post.commentsEnabled,
+        isScheduled: post.isScheduled,
+        scheduledFor: post.scheduledFor?.toISOString(),
+        publishedAt: post.publishedAt?.toISOString(),
+        detectedLanguage: post.detectedLanguage || undefined,
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+        user: {
+          id: post.user.id,
+          username: post.user.username,
+          displayName: post.user.displayName || undefined,
+          avatarUrl: post.user.avatarUrl || undefined,
+        },
+        ...interactionData,
+      };
+    });
+  }
+
+  // Batch method for fetching interaction data for multiple posts
+  private async getBatchPostInteractionData(postIds: string[], requestingUserId?: string): Promise<{
+    [postId: string]: {
+      supportCount: number;
+      meTooCount: number;
+      similarWorryCount: number;
+      userHasShownSupport?: boolean;
+      userHasMeToo?: boolean;
+    }
+  }> {
+    try {
+      // Batch fetch all interaction data
+      const [
+        supportCounts,
+        meTooCountsData,
+        worryAnalyses,
+        userSupports,
+        userMeToos
+      ] = await Promise.all([
+        // Batch support counts
+        prisma.like.groupBy({
+          by: ['postId'],
+          where: { postId: { in: postIds } },
+          _count: { id: true }
+        }).catch(() => []),
+        
+        // Batch MeToo counts
+        prisma.meToo.groupBy({
+          by: ['postId'],
+          where: { postId: { in: postIds } },
+          _count: { id: true }
+        }).catch(() => []),
+        
+        // Batch worry analyses
+        prisma.worryAnalysis.findMany({
+          where: { postId: { in: postIds } },
+          select: { postId: true, similarWorryCount: true }
+        }).catch(() => []),
+        
+        // Batch user support status
+        requestingUserId ? prisma.like.findMany({
+          where: { postId: { in: postIds }, userId: requestingUserId },
+          select: { postId: true }
+        }).catch(() => []) : Promise.resolve([]),
+        
+        // Batch user MeToo status
+        requestingUserId ? prisma.meToo.findMany({
+          where: { postId: { in: postIds }, userId: requestingUserId },
+          select: { postId: true }
+        }).catch(() => []) : Promise.resolve([])
+      ]);
+
+      // Convert arrays to maps for efficient lookup
+      const supportCountMap = new Map<string, number>(
+        supportCounts.map(item => [item.postId, item._count.id] as [string, number])
+      );
+      const meTooCountMap = new Map<string, number>(
+        meTooCountsData.map(item => [item.postId, item._count.id] as [string, number])
+      );
+      const worryAnalysisMap = new Map<string, number>(
+        worryAnalyses.map(item => [item.postId, item.similarWorryCount || 0] as [string, number])
+      );
+      const userSupportMap = new Set<string>(userSupports.map(item => item.postId));
+      const userMeTooMap = new Set<string>(userMeToos.map(item => item.postId));
+
+      // Build result object
+      const result: { [postId: string]: any } = {};
+      
+      for (const postId of postIds) {
+        const supportCount: number = supportCountMap.get(postId) || 0;
+        const meTooCount: number = meTooCountMap.get(postId) || 0;
+        const aiSimilarCount: number = worryAnalysisMap.get(postId) || 0;
+        const combinedSimilarWorryCount: number = aiSimilarCount + meTooCount;
+
+        result[postId] = {
+          supportCount,
+          meTooCount,
+          similarWorryCount: combinedSimilarWorryCount,
+          userHasShownSupport: requestingUserId ? userSupportMap.has(postId) : undefined,
+          userHasMeToo: requestingUserId ? userMeTooMap.has(postId) : undefined,
+        };
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching batch post interaction data:', error);
+      
+      // Return safe defaults for all posts
+      const result: { [postId: string]: any } = {};
+      for (const postId of postIds) {
+        result[postId] = {
+          supportCount: 0,
+          meTooCount: 0,
+          similarWorryCount: 0,
+          userHasShownSupport: requestingUserId ? false : undefined,
+          userHasMeToo: requestingUserId ? false : undefined,
+        };
+      }
+      return result;
+    }
+  }
+
+  private async getPostInteractionData(postId: string, requestingUserId?: string): Promise<{
+    supportCount: number;
+    meTooCount: number;
+    similarWorryCount: number;
+    userHasShownSupport?: boolean;
+    userHasMeToo?: boolean;
+  }> {
+    try {
+      // Get all interaction counts in parallel with proper error handling
+      const [
+        supportCount,
+        meTooCount,
+        worryAnalysis,
+        userSupport,
+        userMeToo
+      ] = await Promise.all([
+        // Support count - handle potential errors gracefully
+        prisma.like.count({ where: { postId } }).catch(() => 0),
+        
+        // MeToo count - handle potential errors gracefully
+        prisma.meToo.count({ where: { postId } }).catch(() => 0),
+        
+        // AI similar worry count from analysis - handle missing analysis
+        prisma.worryAnalysis.findUnique({
+          where: { postId },
+          select: { similarWorryCount: true }
+        }).catch(() => null),
+        
+        // User's support status (if requesting user provided)
+        requestingUserId ? prisma.like.findFirst({
+          where: { postId, userId: requestingUserId }
+        }).catch(() => null) : Promise.resolve(null),
+        
+        // User's MeToo status (if requesting user provided)
+        requestingUserId ? prisma.meToo.findFirst({
+          where: { postId, userId: requestingUserId }
+        }).catch(() => null) : Promise.resolve(null)
+      ]);
+
+      // Calculate combined similar worry count (AI + MeToo) with safe defaults
+      const aiSimilarCount = worryAnalysis?.similarWorryCount || 0;
+      const safeMeTooCount = meTooCount || 0;
+      const combinedSimilarWorryCount = aiSimilarCount + safeMeTooCount;
+
+      return {
+        supportCount: supportCount || 0,
+        meTooCount: safeMeTooCount,
+        similarWorryCount: combinedSimilarWorryCount,
+        userHasShownSupport: requestingUserId ? !!userSupport : undefined,
+        userHasMeToo: requestingUserId ? !!userMeToo : undefined,
+      };
+    } catch (error) {
+      // If there's a critical error, return safe defaults
+      console.error('Error fetching post interaction data:', error);
+      return {
+        supportCount: 0,
+        meTooCount: 0,
+        similarWorryCount: 0,
+        userHasShownSupport: requestingUserId ? false : undefined,
+        userHasMeToo: requestingUserId ? false : undefined,
+      };
+    }
   }
 }

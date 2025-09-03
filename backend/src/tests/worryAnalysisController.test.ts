@@ -17,6 +17,7 @@ const worryAnalysisController = new WorryAnalysisController();
 app.post('/analysis/posts/:postId/analyze', worryAnalysisController.analyzeWorry);
 app.get('/analysis/posts/:postId', worryAnalysisController.getWorryAnalysis);
 app.get('/analysis/posts/:postId/similar', worryAnalysisController.findSimilarWorries);
+app.get('/analysis/posts/:postId/similar-count', worryAnalysisController.getSimilarWorryCount);
 app.get('/analysis/categories', worryAnalysisController.getWorryCategories);
 
 describe('WorryAnalysisController', () => {
@@ -25,6 +26,7 @@ describe('WorryAnalysisController', () => {
     getWorryAnalysis: jest.fn(),
     findSimilarWorries: jest.fn(),
     getWorryCategories: jest.fn(),
+    getSimilarWorryCount: jest.fn(),
   };
 
   const mockPostService = {
@@ -137,24 +139,73 @@ describe('WorryAnalysisController', () => {
     ];
 
     it('should find similar worries successfully', async () => {
-      mockWorryAnalysisService.findSimilarWorries.mockResolvedValue(mockSimilarWorries);
+      const mockResponse = {
+        similarWorries: mockSimilarWorries,
+        totalCount: 2,
+        visibleCount: 2,
+        hasMore: false
+      };
+      mockWorryAnalysisService.findSimilarWorries.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/analysis/posts/post1/similar?limit=5')
         .expect(200);
 
       expect(response.body.data).toEqual(mockSimilarWorries);
-      expect(mockWorryAnalysisService.findSimilarWorries).toHaveBeenCalledWith('post1', 5);
+      expect(response.body.meta).toEqual({
+        totalCount: 2,
+        visibleCount: 2,
+        hasMore: false
+      });
+      expect(mockWorryAnalysisService.findSimilarWorries).toHaveBeenCalledWith('post1', 5, undefined, false);
     });
 
     it('should use default limit if not provided', async () => {
-      mockWorryAnalysisService.findSimilarWorries.mockResolvedValue(mockSimilarWorries);
+      const mockResponse = {
+        similarWorries: mockSimilarWorries,
+        totalCount: 2,
+        visibleCount: 2,
+        hasMore: false
+      };
+      mockWorryAnalysisService.findSimilarWorries.mockResolvedValue(mockResponse);
 
       await request(app)
         .get('/analysis/posts/post1/similar')
         .expect(200);
 
-      expect(mockWorryAnalysisService.findSimilarWorries).toHaveBeenCalledWith('post1', 5);
+      expect(mockWorryAnalysisService.findSimilarWorries).toHaveBeenCalledWith('post1', 5, undefined, false);
+    });
+  });
+
+  describe('GET /analysis/posts/:postId/similar-count', () => {
+    it('should get similar worry count successfully', async () => {
+      const mockCountResponse = {
+        count: 8,
+        breakdown: {
+          aiDetectedSimilar: 5,
+          meTooResponses: 3
+        }
+      };
+      mockWorryAnalysisService.getSimilarWorryCount.mockResolvedValue(mockCountResponse);
+
+      const response = await request(app)
+        .get('/analysis/posts/post1/similar-count?breakdown=true')
+        .expect(200);
+
+      expect(response.body.data).toEqual(mockCountResponse);
+      expect(mockWorryAnalysisService.getSimilarWorryCount).toHaveBeenCalledWith('post1', true);
+    });
+
+    it('should get similar worry count without breakdown', async () => {
+      const mockCountResponse = { count: 8 };
+      mockWorryAnalysisService.getSimilarWorryCount.mockResolvedValue(mockCountResponse);
+
+      const response = await request(app)
+        .get('/analysis/posts/post1/similar-count')
+        .expect(200);
+
+      expect(response.body.data).toEqual(mockCountResponse);
+      expect(mockWorryAnalysisService.getSimilarWorryCount).toHaveBeenCalledWith('post1', false);
     });
   });
 

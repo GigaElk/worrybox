@@ -1,52 +1,103 @@
 import React, { useState, useEffect } from 'react'
-import { worryAnalysisService, SimilarWorry } from '../services/worryAnalysisService'
-import { Link } from 'react-router-dom'
-import { Loader2, Link as LinkIcon, AlertTriangle, Users, TrendingUp } from 'lucide-react'
+import { SimilarWorryCountResponse } from '../services/worryAnalysisService'
+import { privacyFilteringService } from '../services/privacyFilteringService'
+import { Loader2, AlertTriangle, Users, TrendingUp, BarChart3 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface SimilarWorriesProps {
   postId: string
+  showBreakdown?: boolean
   className?: string
-  limit?: number
+  onCountChange?: (count: number) => void
 }
 
 const SimilarWorries: React.FC<SimilarWorriesProps> = ({ 
   postId, 
-  className = '', 
-  limit = 5 
+  showBreakdown = false,
+  className = '',
+  onCountChange
 }) => {
-  const [similarWorries, setSimilarWorries] = useState<SimilarWorry[]>([])
+  const { user } = useAuth()
+  const [countData, setCountData] = useState<SimilarWorryCountResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadSimilarWorries()
-  }, [postId, limit])
+    loadSimilarWorryCount()
+  }, [postId, showBreakdown, user])
 
-  const loadSimilarWorries = async () => {
+  // Handle authentication changes
+  useEffect(() => {
+    privacyFilteringService.onAuthenticationChange(user?.id)
+  }, [user?.id])
+
+  // Listen for external count updates (e.g., from MeTooButton)
+  useEffect(() => {
+    const handleMeTooUpdate = (event: CustomEvent) => {
+      if (event.detail.postId === postId && countData) {
+        const newCountData = {
+          ...countData,
+          count: event.detail.similarWorryCount,
+          breakdown: countData.breakdown ? {
+            ...countData.breakdown,
+            meTooResponses: event.detail.meTooCount
+          } : undefined
+        }
+        setCountData(newCountData)
+        onCountChange?.(newCountData.count)
+      }
+    }
+
+    window.addEventListener('meTooUpdated', handleMeTooUpdate as EventListener)
+    return () => {
+      window.removeEventListener('meTooUpdated', handleMeTooUpdate as EventListener)
+    }
+  }, [postId, countData, onCountChange])
+
+  const loadSimilarWorryCount = async () => {
     try {
       setIsLoading(true)
       setError(null)
-      const worries = await worryAnalysisService.findSimilarWorries(postId, limit)
-      setSimilarWorries(worries)
-    } catch (error) {
-      console.error('Failed to load similar worries:', error)
-      setError('Failed to load similar worries')
+      
+      // Use the privacy filtering service with user context
+      const response = await privacyFilteringService.getSimilarWorryCount(
+        postId,
+        user?.id,
+        showBreakdown
+      )
+      
+      setCountData(response)
+      onCountChange?.(response.count)
+    } catch (error: any) {
+      console.error('Failed to load similar worry count:', error)
+      
+      // Handle privacy-specific errors
+      if (error.code === 'AUTHENTICATION_REQUIRED') {
+        setError('Please log in to view detailed metrics')
+      } else if (error.code === 'INSUFFICIENT_PERMISSIONS') {
+        setError('You do not have permission to view this content')
+      } else if (error.code === 'PRIVACY_VIOLATION') {
+        setError('Privacy settings prevent viewing this content')
+      } else {
+        setError('Failed to load similar worry count')
+      }
+      setError('Failed to load similar worry count')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getSimilarityColor = (similarity: number) => {
-    if (similarity >= 0.8) return 'text-green-600'
-    if (similarity >= 0.6) return 'text-blue-600'
-    if (similarity >= 0.4) return 'text-yellow-600'
-    return 'text-gray-600'
+  const getSimilarWorryText = () => {
+    if (!countData || countData.count === 0) return 'No similar worries found'
+    if (countData.count === 1) return '1 person has similar worries'
+    return `${countData.count} people have similar worries`
   }
 
   if (isLoading) {
     return (
-      <div className={`flex justify-center items-center py-4 ${className}`}>
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+      <div className={`flex justify-center items-center py-2 ${className}`}>
+        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+        <span className="ml-2 text-sm text-gray-500">Loading...</span>
       </div>
     )
   }
@@ -58,15 +109,21 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
           <AlertTriangle className="w-4 h-4" />
           <span>{error}</span>
         </div>
+        <button 
+          onClick={loadSimilarWorryCount}
+          className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
+        >
+          Try again
+        </button>
       </div>
     )
   }
 
-  if (similarWorries.length === 0) {
+  if (!countData || countData.count === 0) {
     return (
       <div className={`text-sm text-gray-500 ${className}`}>
         <div className="flex items-center space-x-1">
-          <Users className="w-4 h-4" />
+          <TrendingUp className="w-4 h-4" />
           <span>No similar worries found</span>
         </div>
       </div>
@@ -75,42 +132,42 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
 
   return (
     <div className={`${className}`}>
-      <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-        <TrendingUp className="w-4 h-4 mr-1" />
-        Similar Worries ({similarWorries.length})
-      </h3>
-      <div className="space-y-3">
-        {similarWorries.map((worry) => (
-          <div key={worry.id} className="border-l-2 border-gray-200 pl-3 hover:border-blue-300 transition-colors">
-            <Link 
-              to={`/posts/${worry.id}`}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-start space-x-1"
-            >
-              <LinkIcon className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              <span className="line-clamp-2">{worry.shortContent}</span>
-            </Link>
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                <span className="px-2 py-0.5 bg-gray-100 rounded">
-                  {worry.category}
-                </span>
-                {worry.subcategory && (
-                  <span className="px-2 py-0.5 bg-gray-50 rounded">
-                    {worry.subcategory}
-                  </span>
-                )}
+      <div className="flex items-center justify-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+        <div className="text-center w-full">
+          <div className="flex items-center justify-center space-x-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-blue-600" />
+            <span className="text-xl font-bold text-blue-600">
+              {countData.count}
+            </span>
+          </div>
+          <p className="text-xs text-gray-600 mb-2">
+            {getSimilarWorryText()}
+          </p>
+          
+          {/* Optional breakdown display */}
+          {showBreakdown && countData.breakdown && (
+            <div className="mt-2 pt-2 border-t border-blue-200">
+              <div className="flex items-center justify-center space-x-1 mb-1">
+                <BarChart3 className="w-3 h-3 text-blue-500" />
+                <span className="text-xs font-medium text-blue-700">Breakdown</span>
               </div>
-              <div className="flex items-center space-x-2 text-xs">
-                <span className={`font-medium ${getSimilarityColor(worry.similarity)}`}>
-                  {Math.round(worry.similarity * 100)}% similar
-                </span>
-                <span className="text-gray-500">
-                  {worry.anonymousCount} similar
-                </span>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">AI Detected:</span>
+                  <span className="font-medium text-blue-600">
+                    {countData.breakdown.aiDetectedSimilar}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">Me Too:</span>
+                  <span className="font-medium text-pink-600">
+                    {countData.breakdown.meTooResponses}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   )

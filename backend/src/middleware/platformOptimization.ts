@@ -97,8 +97,8 @@ export class PlatformOptimizationMiddleware {
       const config = this.platformAdapter.getConfig();
       
       // Override res.end to check memory after request
-      const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]) {
+      const originalEnd = res.end.bind(res);
+      res.end = function(this: Response, ...args: any[]): any {
         const endMemory = process.memoryUsage().heapUsed;
         const memoryDelta = endMemory - startMemory;
         const currentMemoryMB = Math.round(endMemory / 1024 / 1024);
@@ -119,8 +119,8 @@ export class PlatformOptimizationMiddleware {
         res.setHeader('X-Memory-Usage', `${currentMemoryMB}MB`);
         res.setHeader('X-Memory-Percentage', `${Math.round(memoryPercentage)}%`);
 
-        return originalEnd.apply(this, args);
-      };
+        return originalEnd(...args);
+      } as any;
 
       next();
     };

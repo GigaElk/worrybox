@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { followService, FollowResponse } from '../services/followService'
 import { User, Loader2 } from 'lucide-react'
 import FollowButton from './FollowButton'
+import UserAvatar from './UserAvatar'
 import toast from 'react-hot-toast'
 
 interface FollowListProps {
@@ -100,27 +101,15 @@ const FollowList: React.FC<FollowListProps> = ({ userId, type, className = '' })
             <div key={follow.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
               <div className="flex items-center space-x-3">
                 {/* Avatar */}
-                <div className="flex-shrink-0">
-                  {displayUser.avatarUrl ? (
-                    <img
-                      src={displayUser.avatarUrl}
-                      alt={displayUser.displayName || displayUser.username}
-                      className="w-12 h-12 rounded-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                        target.nextElementSibling?.classList.remove('hidden')
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className={`w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center ${
-                      displayUser.avatarUrl ? 'hidden' : ''
-                    }`}
-                  >
-                    <User className="w-6 h-6 text-gray-400" />
-                  </div>
-                </div>
+                <UserAvatar 
+                  user={{
+                    id: displayUser.id,
+                    username: displayUser.username,
+                    displayName: displayUser.displayName,
+                    avatarUrl: displayUser.avatarUrl
+                  }}
+                  size="lg"
+                />
 
                 {/* User Info */}
                 <div>

@@ -18,10 +18,15 @@ interface LogContext {
   cpuUsage?: number;
   errorCode?: string;
   stackTrace?: string;
+  consecutiveHighCount?: number;
+  memoryDelta?: number;
+  memoryBefore?: number;
+  memoryAfter?: number;
+  isStableHigh?: boolean;
+  category?: string;
   port?: number;
   operation?: string;
   timerId?: string;
-  category?: string;
   logLevel?: string;
   newLevel?: string;
   originalLevel?: string;
@@ -30,14 +35,10 @@ interface LogContext {
   enableAdminRoleAuth?: boolean;
   hasApiKey?: boolean;
   user?: string;
-  memoryDelta?: number;
   platform?: string;
   systemState?: any;
   metadata?: Record<string, any>;
-  // Additional properties for reliability enhancements
   environment?: string;
-  memoryBefore?: number;
-  memoryAfter?: number;
   enableIPWhitelist?: boolean;
   hasAuth?: boolean;
   cpuUsed?: number;
@@ -75,6 +76,7 @@ interface SystemStateLogData {
   queuedOperations?: number;
   errorRate?: number;
   responseTime?: number;
+  correlationId?: string;
 }
 
 interface LogMetrics {

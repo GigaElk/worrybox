@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { stringToArray, arrayToString } from '../utils/arrayHelpers';
 import { GoogleAIService } from './googleAIService';
+import { performanceMonitor } from '../utils/performanceMonitor';
 
 const prisma = new PrismaClient();
 
@@ -20,6 +21,21 @@ export interface SimilarWorry {
   subcategory?: string;
   similarity: number; // 0-1 similarity score
   anonymousCount: number;
+  isOwnPost: boolean;
+  privacyLevel: 'public' | 'friends' | 'private';
+  createdAt: string;
+  user?: {
+    id: string;
+    username: string;
+    displayName?: string;
+  };
+}
+
+export interface SimilarWorriesResponse {
+  similarWorries: SimilarWorry[];
+  totalCount: number;
+  visibleCount: number;
+  hasMore: boolean;
 }
 
 export interface WorryCategory {
@@ -31,6 +47,7 @@ export interface WorryCategory {
 
 export class WorryAnalysisService {
   private static instance: WorryAnalysisService;
+  private cache = new Map<string, { data: any; expiresAt: number }>();
   
   // Predefined worry categories for fallback analysis
   private readonly worryCategories: WorryCategory[] = [
@@ -91,6 +108,47 @@ export class WorryAnalysisService {
       WorryAnalysisService.instance = new WorryAnalysisService();
     }
     return WorryAnalysisService.instance;
+  }
+
+  // Cache management methods
+  private async getCachedResult<T>(key: string): Promise<T | null> {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    if (Date.now() > cached.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return cached.data as T;
+  }
+
+  private async setCachedResult<T>(key: string, data: T, ttlSeconds: number): Promise<void> {
+    const expiresAt = Date.now() + (ttlSeconds * 1000);
+    this.cache.set(key, { data, expiresAt });
+    
+    // Clean up expired entries periodically
+    if (this.cache.size > 1000) {
+      this.cleanupCache();
+    }
+  }
+
+  private cleanupCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  // Invalidate cache for a specific post
+  public invalidatePostCache(postId: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.includes(postId)) {
+        this.cache.delete(key);
+      }
+    }
   }
 
   /**
@@ -213,7 +271,8 @@ export class WorryAnalysisService {
 
     // Extract simple keywords (words longer than 3 characters)
     const words = content.toLowerCase().match(/\b\w{4,}\b/g) || [];
-    const keywords = [...new Set(words)].slice(0, 5); // Top 5 unique keywords
+    const uniqueWords = Array.from(new Set(words));
+    const keywords = uniqueWords.slice(0, 5); // Top 5 unique keywords
 
     // Simple sentiment based on negative/positive words
     const negativeWords = ['worried', 'anxious', 'scared', 'sad', 'angry', 'frustrated', 'stressed'];
@@ -338,7 +397,9 @@ export class WorryAnalysisService {
       .filter(word => word.length > 4)
       .slice(0, 5); // Limit to 5 keywords
 
-    return [...new Set([...matchedKeywords, ...relevantWords])].slice(0, 8);
+    const allKeywords = matchedKeywords.concat(relevantWords);
+    const uniqueKeywords = Array.from(new Set(allKeywords));
+    return uniqueKeywords.slice(0, 8);
   }
 
   /**
@@ -403,31 +464,68 @@ export class WorryAnalysisService {
   }
 
   /**
-   * Find similar worries based on content analysis
+   * Find similar worries based on content analysis with privacy controls
    */
-  async findSimilarWorries(postId: string, limit = 5): Promise<SimilarWorry[]> {
+  async findSimilarWorries(
+    postId: string, 
+    limit = 5, 
+    currentUserId?: string,
+    includePrivate = false
+  ): Promise<SimilarWorriesResponse> {
+    // Define cache key outside try-catch so it's accessible in catch block
+    const cacheKey = `similar_worries:${postId}:${currentUserId || 'anon'}:${limit}:${includePrivate}`;
+    
     try {
+      // Check cache first
+      const cached = await this.getCachedResult<SimilarWorriesResponse>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
       const currentAnalysis = await prisma.worryAnalysis.findUnique({
-        where: { postId }
+        where: { postId },
+        select: {
+          category: true,
+          subcategory: true,
+          keywords: true,
+          similarWorryCount: true
+        }
       });
 
       if (!currentAnalysis) {
-        return [];
+        const emptyResult = {
+          similarWorries: [],
+          totalCount: 0,
+          visibleCount: 0,
+          hasMore: false
+        };
+        await this.setCachedResult(cacheKey, emptyResult, 300); // Cache for 5 minutes
+        return emptyResult;
       }
 
-      // Find posts with similar categories and keywords
-      const similarPosts = await prisma.worryAnalysis.findMany({
+      // Optimized query with better indexing and performance monitoring
+      const similarPosts = await performanceMonitor.monitorQuery(
+        'findSimilarWorries',
+        () => prisma.worryAnalysis.findMany({
         where: {
           AND: [
             { postId: { not: postId } }, // Exclude current post
             {
               OR: [
+                // Prioritize exact category matches
+                { 
+                  category: currentAnalysis.category,
+                  subcategory: currentAnalysis.subcategory 
+                },
                 { category: currentAnalysis.category },
-                ...stringToArray(currentAnalysis.keywords).map(keyword => ({
-                  keywords: {
-                    contains: keyword
-                  }
-                }))
+                // Keyword matches (if keywords exist)
+                ...(currentAnalysis.keywords ? 
+                  stringToArray(currentAnalysis.keywords).map(keyword => ({
+                    keywords: {
+                      contains: keyword
+                    }
+                  })) : []
+                )
               ]
             }
           ]
@@ -436,14 +534,31 @@ export class WorryAnalysisService {
           post: {
             select: {
               id: true,
-              shortContent: true
+              shortContent: true,
+              privacyLevel: true,
+              userId: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true
+                }
+              }
             }
           }
         },
-        take: limit * 2 // Get more to filter and rank
-      });
+        orderBy: [
+          { category: 'asc' }, // Use index for sorting
+          { similarWorryCount: 'desc' },
+          { createdAt: 'desc' }
+        ],
+          take: limit * 3 // Get more to filter and rank
+        }),
+        { postId, limit, currentUserId, includePrivate }
+      );
 
-      // Calculate similarity scores and rank
+      // Calculate similarity scores and rank all posts
       const rankedSimilar = similarPosts
         .map(analysis => {
           let similarity = 0;
@@ -466,23 +581,78 @@ export class WorryAnalysisService {
           ).length;
           similarity += (keywordOverlap / Math.max(analysisKeywords.length, currentKeywords.length)) * 0.4;
 
+          const isOwnPost = analysis.post.userId === currentUserId;
+
           return {
             id: analysis.post.id,
             shortContent: analysis.post.shortContent,
             category: analysis.category,
             subcategory: analysis.subcategory || undefined,
             similarity,
-            anonymousCount: analysis.similarWorryCount
+            anonymousCount: analysis.similarWorryCount,
+            isOwnPost,
+            privacyLevel: analysis.post.privacyLevel as 'public' | 'friends' | 'private',
+            createdAt: analysis.post.createdAt.toISOString(),
+            user: analysis.post.user
           };
         })
         .filter(item => item.similarity > 0.2) // Minimum similarity threshold
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, limit);
+        .sort((a, b) => b.similarity - a.similarity);
 
-      return rankedSimilar;
+      const totalCount = rankedSimilar.length;
+
+      // Apply privacy filtering
+      const visibleWorries = rankedSimilar.filter(worry => {
+        // Always show public posts
+        if (worry.privacyLevel === 'public') return true;
+        
+        // Show private posts only to the author
+        if (worry.privacyLevel === 'private' && worry.isOwnPost) return true;
+        
+        // For friends privacy level, we'd need to check friendship status
+        // For now, treat friends posts like private (only show to author)
+        if (worry.privacyLevel === 'friends' && worry.isOwnPost) return true;
+        
+        return false;
+      });
+
+      // Sanitize user data for privacy
+      const sanitizedWorries = visibleWorries.map(worry => ({
+        ...worry,
+        user: worry.privacyLevel === 'public' || worry.isOwnPost 
+          ? worry.user 
+            ? {
+                id: worry.user.id,
+                username: worry.user.username,
+                displayName: worry.user.displayName || undefined
+              }
+            : undefined
+          : undefined
+      })).slice(0, limit);
+
+      const result = {
+        similarWorries: sanitizedWorries,
+        totalCount,
+        visibleCount: visibleWorries.length,
+        hasMore: visibleWorries.length > limit
+      };
+
+      // Cache the result for 10 minutes
+      await this.setCachedResult(cacheKey, result, 600);
+      
+      return result;
     } catch (error) {
       console.error('Failed to find similar worries:', error);
-      return [];
+      const errorResult = {
+        similarWorries: [],
+        totalCount: 0,
+        visibleCount: 0,
+        hasMore: false
+      };
+      
+      // Cache error result for shorter time (1 minute)
+      await this.setCachedResult(cacheKey, errorResult, 60);
+      return errorResult;
     }
   }
 
@@ -508,6 +678,74 @@ export class WorryAnalysisService {
     } catch (error) {
       console.error('Failed to get worry analysis:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get similar worry count with optional breakdown
+   */
+  async getSimilarWorryCount(postId: string, showBreakdown = false): Promise<{
+    count: number;
+    breakdown?: {
+      aiDetectedSimilar: number;
+      meTooResponses: number;
+    };
+  }> {
+    try {
+      // Check cache first
+      const cacheKey = `similar_count:${postId}:${showBreakdown}`;
+      const cached = await this.getCachedResult<{
+        count: number;
+        breakdown?: {
+          aiDetectedSimilar: number;
+          meTooResponses: number;
+        };
+      }>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      // Use a single optimized query to get both counts with performance monitoring
+      const [worryAnalysis, meTooCount] = await Promise.all([
+        performanceMonitor.monitorQuery(
+          'getSimilarWorryCount.worryAnalysis',
+          () => prisma.worryAnalysis.findUnique({
+            where: { postId },
+            select: { similarWorryCount: true }
+          }),
+          { postId }
+        ),
+        performanceMonitor.monitorQuery(
+          'getSimilarWorryCount.meTooCount',
+          () => prisma.meToo.count({
+            where: { postId }
+          }),
+          { postId }
+        )
+      ]);
+
+      const aiSimilarCount = worryAnalysis?.similarWorryCount || 0;
+      const totalCount = aiSimilarCount + meTooCount;
+
+      const result = showBreakdown ? {
+        count: totalCount,
+        breakdown: {
+          aiDetectedSimilar: aiSimilarCount,
+          meTooResponses: meTooCount
+        }
+      } : { count: totalCount };
+
+      // Cache for 5 minutes
+      await this.setCachedResult(cacheKey, result, 300);
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to get similar worry count:', error);
+      const errorResult = { count: 0 };
+      
+      // Cache error result for 1 minute
+      await this.setCachedResult(`similar_count:${postId}:${showBreakdown}`, errorResult, 60);
+      return errorResult;
     }
   }
 

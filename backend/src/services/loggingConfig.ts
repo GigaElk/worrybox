@@ -126,17 +126,20 @@ export class LoggingConfigManager {
    */
   configureForDevelopment(): void {
     const developmentConfig: Partial<LoggingConfiguration> = {
-      logLevel: 'debug',
+      logLevel: 'error',
       enableStructuredLogging: false,
-      enablePerformanceLogging: true,
-      enableErrorContextLogging: true,
+      enablePerformanceLogging: false,
+      enableErrorContextLogging: false,
       enableSystemStateLogging: false,
-      logRequestBody: true,
+      logRequestBody: false,
       logResponseBody: false,
-      sanitizeHeaders: false,
+      enableRequestLogging: false,
+      enableResponseLogging: false,
+      enableSlowRequestLogging: false,
+      sanitizeHeaders: true,
       productionOptimizations: false,
-      developmentVerbosity: true,
-      excludePaths: ['/favicon.ico'],
+      developmentVerbosity: false,
+      excludePaths: ['/favicon.ico', '/health', '/metrics'],
     };
 
     this.updateConfiguration(developmentConfig);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { commentService, CommentResponse } from '../services/commentService'
 import { MessageCircle, Send, Edit2, Trash2, Loader2, Reply, Flag, AlertTriangle } from 'lucide-react'
+import UserAvatar from './UserAvatar'
 import toast from 'react-hot-toast'
 
 interface CommentSectionProps {
@@ -237,11 +238,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
                 <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {comment.user.displayName?.[0] || comment.user.username[0]}
-                        </span>
-                      </div>
+                      <UserAvatar 
+                        user={{
+                          id: comment.userId,
+                          username: comment.user.username,
+                          displayName: comment.user.displayName,
+                          avatarUrl: comment.user.avatarUrl
+                        }}
+                        size="sm"
+                      />
                       <div>
                         <div className="flex items-center space-x-2">
                           <p className="font-medium text-sm">
@@ -382,11 +387,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
                             <div key={reply.id} className="bg-white rounded-lg p-3 border border-gray-100">
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center space-x-2">
-                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-xs font-medium">
-                                      {reply.user.displayName?.[0] || reply.user.username[0]}
-                                    </span>
-                                  </div>
+                                  <UserAvatar 
+                                    user={{
+                                      id: reply.userId,
+                                      username: reply.user.username,
+                                      displayName: reply.user.displayName,
+                                      avatarUrl: reply.user.avatarUrl
+                                    }}
+                                    size="xs"
+                                  />
                                   <div>
                                     <div className="flex items-center space-x-2">
                                       <p className="font-medium text-sm">

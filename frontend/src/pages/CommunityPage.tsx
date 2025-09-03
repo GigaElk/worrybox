@@ -27,9 +27,9 @@ interface RecentPost {
   worryPrompt: string
   privacyLevel: string
   createdAt: string
-  likesCount: number
+  supportCount: number
   commentsCount: number
-  isLiked: boolean
+  isSupported: boolean
 }
 
 interface ActiveUser {

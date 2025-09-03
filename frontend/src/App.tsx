@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Layout from './components/Layout'
 import WorryBoxLogoSquare from './assets/WorryBoxLogoSquare.png'
 import './i18n' // Initialize i18n
+import { ErrorBoundary } from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -58,40 +59,49 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <SubscriptionProvider>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="feed" element={<FeedPage />} />
-              <Route path="wellness" element={<WellnessDashboard />} />
-              <Route path="wellness/exercises" element={<ExercisesPage />} />
-              <Route path="wellness/exercises/:id" element={<ExerciseDetail />} />
-              <Route path="wellness/techniques" element={<CopingTechniquesPage />} />
-              <Route path="wellness/techniques/:id" element={<CopingTechniqueDetail />} />
-              <Route path="resolution-stories" element={<ResolutionStoriesPage />} />
-              <Route path="resources" element={<ResourcesPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="community" element={<CommunityPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/profile/:username" element={<ProfilePage />} />
-            <Route path="/profile/edit" element={<EditProfilePage />} />
-            <Route path="/analysis/:postId" element={<WorryAnalysisPage />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/demographics" element={<DemographicAnalyticsPage />} />
-          </Routes>
-        </div>
-      </SubscriptionProvider>
-    </AuthProvider>
+    <ErrorBoundary 
+      section="Application"
+      onError={(error, errorInfo) => {
+        // Log to error reporting service in production
+        console.error('Application Error:', error, errorInfo);
+      }}
+      showDetails={process.env.NODE_ENV === 'development'}
+    >
+      <AuthProvider>
+        <SubscriptionProvider>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="feed" element={<FeedPage />} />
+                <Route path="wellness" element={<WellnessDashboard />} />
+                <Route path="wellness/exercises" element={<ExercisesPage />} />
+                <Route path="wellness/exercises/:id" element={<ExerciseDetail />} />
+                <Route path="wellness/techniques" element={<CopingTechniquesPage />} />
+                <Route path="wellness/techniques/:id" element={<CopingTechniqueDetail />} />
+                <Route path="resolution-stories" element={<ResolutionStoriesPage />} />
+                <Route path="resources" element={<ResourcesPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="community" element={<CommunityPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/profile/:username" element={<ProfilePage />} />
+              <Route path="/profile/edit" element={<EditProfilePage />} />
+              <Route path="/analysis/:postId" element={<WorryAnalysisPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/demographics" element={<DemographicAnalyticsPage />} />
+            </Routes>
+          </div>
+        </SubscriptionProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

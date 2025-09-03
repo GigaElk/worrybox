@@ -86,17 +86,29 @@ export class WorryAnalysisController {
   }
 
   /**
-   * Find similar worries
+   * Find similar worries with privacy controls
    */
   async findSimilarWorries(req: Request, res: Response) {
     try {
       const { postId } = req.params;
       const limit = parseInt(req.query.limit as string) || 5;
+      const includePrivate = req.query.includePrivate === 'true';
+      const currentUserId = (req as any).user?.userId; // From optional auth
 
-      const similarWorries = await worryAnalysisService.findSimilarWorries(postId, limit);
+      const result = await worryAnalysisService.findSimilarWorries(
+        postId, 
+        limit, 
+        currentUserId,
+        includePrivate
+      );
 
       res.json({
-        data: similarWorries,
+        data: result.similarWorries,
+        meta: {
+          totalCount: result.totalCount,
+          visibleCount: result.visibleCount,
+          hasMore: result.hasMore
+        }
       });
     } catch (error: any) {
       console.error('Failed to find similar worries:', error);
@@ -126,6 +138,32 @@ export class WorryAnalysisController {
       res.status(500).json({
         error: {
           code: 'CATEGORIES_FETCH_FAILED',
+          message: error.message,
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  /**
+   * Get similar worry count (AI + MeToo combined)
+   */
+  async getSimilarWorryCount(req: Request, res: Response) {
+    try {
+      const { postId } = req.params;
+      const showBreakdown = req.query.breakdown === 'true';
+
+      const result = await worryAnalysisService.getSimilarWorryCount(postId, showBreakdown);
+
+      res.json({
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('Failed to get similar worry count:', error);
+      res.status(500).json({
+        error: {
+          code: 'SIMILAR_WORRY_COUNT_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),

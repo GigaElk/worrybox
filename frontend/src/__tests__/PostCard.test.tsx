@@ -13,7 +13,7 @@ vi.mock('../contexts/AuthContext', () => ({
 }))
 
 vi.mock('../components/LikeButton', () => ({
-  default: () => <div data-testid="like-button">Like Button</div>,
+  default: () => <div data-testid="support-button">Support Button</div>,
 }))
 
 vi.mock('../components/CommentSection', () => ({

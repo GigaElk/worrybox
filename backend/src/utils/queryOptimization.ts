@@ -59,8 +59,8 @@ export const DATABASE_CONFIG = {
       url: process.env.DATABASE_URL,
     },
   },
-  // Enable query logging in development only
-  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  // Disable query logging to reduce console output
+  log: ['error'],
 };
 
 // Query performance monitoring

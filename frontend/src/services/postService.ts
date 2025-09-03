@@ -138,6 +138,17 @@ export const postService = {
     return response.data.data
   },
 
+  // Get general feed (includes followed users' posts and public posts)
+  async getFeed(page: number = 1, limit: number = 20): Promise<PostsResponse> {
+    const offset = (page - 1) * limit
+    const params = new URLSearchParams()
+    params.append('limit', limit.toString())
+    params.append('offset', offset.toString())
+
+    const response = await api.get(`/users/me/feed?${params.toString()}`)
+    return response.data.data
+  },
+
   // Get available worry prompts
   async getWorryPrompts(): Promise<string[]> {
     const response = await api.get('/posts/prompts')

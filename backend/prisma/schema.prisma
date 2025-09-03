@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,96 +8,92 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String   @map("password_hash")
-  username      String   @unique
-  displayName     String?  @map("display_name")
-  bio             String?
-  avatarUrl       String?  @map("avatar_url")
-  emailVerified   Boolean  @default(false) @map("email_verified")
-  
-  // Location fields (all optional, user-controlled)
-  country         String?  // User-provided country code (ISO 3166-1 alpha-2)
-  region          String?  // User-provided state/province/region  
-  city            String?  // User-provided city
-  locationSharing Boolean  @default(false) @map("location_sharing") // Consent for analytics
-  
-  // Email tracking fields
-  welcomeEmailSent    Boolean   @default(false) @map("welcome_email_sent")
-  welcomeEmailSentAt  DateTime? @map("welcome_email_sent_at")
-  
-  // User roles and special privileges
-  role                String    @default("user") // "user", "admin", "moderator"
-  lifetimePremium     Boolean   @default(false) @map("lifetime_premium") // For winners, founders, etc.
-  lifetimePremiumReason String? @map("lifetime_premium_reason") // "founder", "contest_winner", "special_offer"
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  posts                    Post[]
-  comments                 Comment[]
-  likes                    Like[]
-  following                Follow[] @relation("UserFollowing")
-  followers                Follow[] @relation("UserFollowers")
-  subscriptions            Subscription[]
-  worryResolutions         WorryResolution[]
-  exerciseCompletions      UserExerciseCompletion[]
-  exerciseProgress         ExerciseProgress[]
-  notifications            Notification[]
-  notificationPreferences  NotificationPreferences?
-  languagePreference       UserLanguagePreference?
-  commentReports           CommentReport[] @relation("CommentReports")
+  id                      String                   @id @default(uuid())
+  email                   String                   @unique
+  passwordHash            String                   @map("password_hash")
+  username                String                   @unique
+  displayName             String?                  @map("display_name")
+  bio                     String?
+  avatarUrl               String?                  @map("avatar_url")
+  profilePictureCloudinaryId String?               @map("profile_picture_cloudinary_id")
+  emailVerified           Boolean                  @default(false) @map("email_verified")
+  country                 String?
+  region                  String?
+  city                    String?
+  locationSharing         Boolean                  @default(false) @map("location_sharing")
+  welcomeEmailSent        Boolean                  @default(false) @map("welcome_email_sent")
+  welcomeEmailSentAt      DateTime?                @map("welcome_email_sent_at")
+  role                    String                   @default("user")
+  lifetimePremium         Boolean                  @default(false) @map("lifetime_premium")
+  lifetimePremiumReason   String?                  @map("lifetime_premium_reason")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  profilePictureUpdatedAt DateTime?                @map("profile_picture_updated_at")
+  commentReports          CommentReport[]          @relation("CommentReports")
+  comments                Comment[]
+  exerciseProgress        ExerciseProgress[]
+  following               Follow[]                 @relation("UserFollowing")
+  followers               Follow[]                 @relation("UserFollowers")
+  likes                   Like[]
+  meToos                  MeToo[]
+  notificationPreferences NotificationPreferences?
+  notifications           Notification[]
+  posts                   Post[]
+  subscriptions           Subscription[]
+  exerciseCompletions     UserExerciseCompletion[]
+  languagePreference      UserLanguagePreference?
+  worryResolutions        WorryResolution[]
 
   @@map("users")
 }
 
 model Post {
-  id               String    @id @default(uuid())
-  userId           String    @map("user_id")
-  shortContent     String    @map("short_content")
-  longContent      String?   @map("long_content")
-  worryPrompt      String    @map("worry_prompt")
-  privacyLevel     String    @map("privacy_level") // 'public', 'friends', 'private'
-  commentsEnabled  Boolean   @default(true) @map("comments_enabled")
-  isScheduled      Boolean   @default(false) @map("is_scheduled")
-  scheduledFor     DateTime? @map("scheduled_for")
-  publishedAt      DateTime? @map("published_at")
-  detectedLanguage String?   @map("detected_language")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments         Comment[]
-  likes            Like[]
-  worryAnalysis    WorryAnalysis?
-  worryResolution  WorryResolution?
+  id                  String                   @id @default(uuid())
+  userId              String                   @map("user_id")
+  shortContent        String                   @map("short_content")
+  longContent         String?                  @map("long_content")
+  worryPrompt         String                   @map("worry_prompt")
+  privacyLevel        String                   @map("privacy_level")
+  commentsEnabled     Boolean                  @default(true) @map("comments_enabled")
+  isScheduled         Boolean                  @default(false) @map("is_scheduled")
+  scheduledFor        DateTime?                @map("scheduled_for")
+  publishedAt         DateTime?                @map("published_at")
+  detectedLanguage    String?                  @map("detected_language")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  comments            Comment[]
+  likes               Like[]
+  meToos              MeToo[]
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exerciseCompletions UserExerciseCompletion[]
+  worryAnalysis       WorryAnalysis?
+  worryResolution     WorryResolution?
 
+  // Performance indexes for privacy-aware similar worries queries
+  @@index([privacyLevel])
+  @@index([userId, privacyLevel])
+  @@index([createdAt])
+  @@index([privacyLevel, createdAt])
   @@map("posts")
 }
 
 model Comment {
-  id                String    @id @default(uuid())
-  postId            String    @map("post_id")
-  userId            String    @map("user_id")
-  content           String
-  moderationStatus  String    @default("pending") @map("moderation_status") // 'approved', 'flagged', 'rejected', 'pending'
-  moderationScore   Decimal?  @map("moderation_score")
-  parentCommentId   String?   @map("parent_comment_id")
-  detectedLanguage  String?   @map("detected_language")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies         Comment[] @relation("CommentReplies")
-  moderationQueue ModerationQueue?
-  reports         CommentReport[]
+  id               String           @id @default(uuid())
+  postId           String           @map("post_id")
+  userId           String           @map("user_id")
+  content          String
+  moderationStatus String           @default("pending") @map("moderation_status")
+  moderationScore  Decimal?         @map("moderation_score")
+  parentCommentId  String?          @map("parent_comment_id")
+  detectedLanguage String?          @map("detected_language")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  reports          CommentReport[]
+  parentComment    Comment?         @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies          Comment[]        @relation("CommentReplies")
+  post             Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  moderationQueue  ModerationQueue?
 
   @@map("comments")
 }
@@ -110,10 +103,8 @@ model Follow {
   followerId  String   @map("follower_id")
   followingId String   @map("following_id")
   createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -124,38 +115,48 @@ model Like {
   userId    String   @map("user_id")
   postId    String   @map("post_id")
   createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@map("likes")
 }
 
-model Subscription {
-  id                      String    @id @default(uuid())
-  userId                  String    @map("user_id")
-  tier                    String    // 'free', 'supporter', 'premium'
-  status                  String    // 'active', 'cancelled', 'expired', 'past_due', 'unpaid'
-  lemonSqueezyId          String?   @unique @map("lemonsqueezy_id") // LemonSqueezy subscription ID (deprecated)
-  lemonSqueezyCustomerId  String?   @map("lemonsqueezy_customer_id") // (deprecated)
-  lemonSqueezyProductId   String?   @map("lemonsqueezy_product_id") // (deprecated)
-  lemonSqueezyVariantId   String?   @map("lemonsqueezy_variant_id") // (deprecated)
-  paypalSubscriptionId    String?   @unique @map("paypal_subscription_id") // PayPal subscription ID
-  paypalPlanId            String?   @map("paypal_plan_id") // PayPal plan ID
-  currentPeriodStart      DateTime? @map("current_period_start")
-  currentPeriodEnd        DateTime? @map("current_period_end")
-  trialEndsAt             DateTime? @map("trial_ends_at")
-  renewsAt                DateTime? @map("renews_at")
-  endsAt                  DateTime? @map("ends_at")
-  isUsageBased            Boolean   @default(false) @map("is_usage_based")
-  subscriptionItemId      String?   @map("subscription_item_id")
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
+model MeToo {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  postId    String   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+  @@map("me_too")
+}
+
+model Subscription {
+  id                     String    @id @default(uuid())
+  userId                 String    @map("user_id")
+  tier                   String
+  status                 String
+  lemonSqueezyId         String?   @unique @map("lemonsqueezy_id")
+  lemonSqueezyCustomerId String?   @map("lemonsqueezy_customer_id")
+  lemonSqueezyProductId  String?   @map("lemonsqueezy_product_id")
+  lemonSqueezyVariantId  String?   @map("lemonsqueezy_variant_id")
+  paypalSubscriptionId   String?   @unique @map("paypal_subscription_id")
+  paypalPlanId           String?   @map("paypal_plan_id")
+  currentPeriodStart     DateTime? @map("current_period_start")
+  currentPeriodEnd       DateTime? @map("current_period_end")
+  trialEndsAt            DateTime? @map("trial_ends_at")
+  renewsAt               DateTime? @map("renews_at")
+  endsAt                 DateTime? @map("ends_at")
+  isUsageBased           Boolean   @default(false) @map("is_usage_based")
+  subscriptionItemId     String?   @map("subscription_item_id")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
 }
@@ -166,15 +167,19 @@ model WorryAnalysis {
   category          String
   subcategory       String?
   sentimentScore    Decimal? @map("sentiment_score")
-  keywords          String? // Comma-separated values
+  keywords          String?
   similarWorryCount Int      @default(0) @map("similar_worry_count")
   analysisVersion   String   @default("1.0") @map("analysis_version")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
+  post              Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  // Relations
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
+  // Performance indexes for similar worries queries
+  @@index([category])
+  @@index([category, subcategory])
+  @@index([keywords])
+  @@index([similarWorryCount])
+  @@index([category, similarWorryCount])
   @@map("worry_analysis")
 }
 
@@ -189,67 +194,61 @@ model AnalyticsCache {
 }
 
 model WorryResolution {
-  id                 String   @id @default(uuid())
-  postId             String   @unique @map("post_id")
-  userId             String   @map("user_id")
-  resolutionStory    String?  @map("resolution_story")
-  copingMethods      String?   @map("coping_methods") // Comma-separated values
-  helpfulnessRating  Int?     @map("helpfulness_rating") // 1-5
-  resolvedAt         DateTime @default(now()) @map("resolved_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  // Relations
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                String   @id @default(uuid())
+  postId            String   @unique @map("post_id")
+  userId            String   @map("user_id")
+  resolutionStory   String?  @map("resolution_story")
+  copingMethods     String?  @map("coping_methods")
+  helpfulnessRating Int?     @map("helpfulness_rating")
+  resolvedAt        DateTime @default(now()) @map("resolved_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  post              Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("worry_resolutions")
 }
 
 model GuidedExercise {
-  id              String   @id @default(uuid())
+  id              String                   @id @default(uuid())
   title           String
   description     String
   category        String
   instructions    String
-  durationMinutes Int?     @map("duration_minutes")
-  difficultyLevel String?  @map("difficulty_level") // 'beginner', 'intermediate', 'advanced'
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  // Relations
-  completions UserExerciseCompletion[]
+  durationMinutes Int?                     @map("duration_minutes")
+  difficultyLevel String?                  @map("difficulty_level")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  completions     UserExerciseCompletion[]
 
   @@map("guided_exercises")
 }
 
 model UserExerciseCompletion {
-  id                  String   @id @default(uuid())
-  userId              String   @map("user_id")
-  exerciseId          String   @map("exercise_id")
-  postId              String?  @map("post_id")
-  effectivenessRating Int?     @map("effectiveness_rating") // 1-5
+  id                  String         @id @default(uuid())
+  userId              String         @map("user_id")
+  exerciseId          String         @map("exercise_id")
+  postId              String?        @map("post_id")
+  effectivenessRating Int?           @map("effectiveness_rating")
   notes               String?
-  completedAt         DateTime @default(now()) @map("completed_at")
-
-  // Relations
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise GuidedExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  post     Post?          @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  completedAt         DateTime       @default(now()) @map("completed_at")
+  exercise            GuidedExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  post                Post?          @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_exercise_completions")
 }
 
 model MentalHealthResource {
-  id              String   @id @default(uuid())
-  name            String
-  type            String   // 'crisis_hotline', 'therapy', 'support_group', 'online_resource'
-  description     String?
-  phoneNumber     String?  @map("phone_number")
-  websiteUrl      String?  @map("website_url")
-  location        String?
-  countryCode     String?  @map("country_code")
-  isCrisisResource Boolean @default(false) @map("is_crisis_resource")
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid())
+  name             String
+  type             String
+  description      String?
+  phoneNumber      String?  @map("phone_number")
+  websiteUrl       String?  @map("website_url")
+  location         String?
+  countryCode      String?  @map("country_code")
+  isCrisisResource Boolean  @default(false) @map("is_crisis_resource")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   @@map("mental_health_resources")
 }
@@ -257,7 +256,7 @@ model MentalHealthResource {
 model Notification {
   id           String    @id @default(uuid())
   userId       String    @map("user_id")
-  type         String    // check_in, support, encouragement, community, reminder
+  type         String
   title        String
   message      String
   isRead       Boolean   @default(false) @map("is_read")
@@ -266,86 +265,75 @@ model Notification {
   metadata     String    @default("{}")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model NotificationPreferences {
-  id                   String  @id @default(uuid())
-  userId               String  @unique @map("user_id")
-  emailNotifications   Boolean @default(true) @map("email_notifications")
-  pushNotifications    Boolean @default(true) @map("push_notifications")
-  checkInFrequency     String  @default("weekly") @map("check_in_frequency") // daily, weekly, biweekly, monthly, never
-  supportNotifications Boolean @default(true) @map("support_notifications")
-  quietHoursStart      String? @map("quiet_hours_start") // HH:MM format
-  quietHoursEnd        String? @map("quiet_hours_end")   // HH:MM format
-  timezone             String  @default("UTC")
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  emailNotifications   Boolean  @default(true) @map("email_notifications")
+  pushNotifications    Boolean  @default(true) @map("push_notifications")
+  checkInFrequency     String   @default("weekly") @map("check_in_frequency")
+  supportNotifications Boolean  @default(true) @map("support_notifications")
+  quietHoursStart      String?  @map("quiet_hours_start")
+  quietHoursEnd        String?  @map("quiet_hours_end")
+  timezone             String   @default("UTC")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
 }
 
 model SupportedLanguage {
-  id         String   @id @default(uuid())
-  code       String   @unique
-  name       String
-  nativeName String   @map("native_name")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  // Relations
+  id              String                   @id @default(uuid())
+  code            String                   @unique
+  name            String
+  nativeName      String                   @map("native_name")
+  isActive        Boolean                  @default(true) @map("is_active")
+  createdAt       DateTime                 @default(now()) @map("created_at")
   userPreferences UserLanguagePreference[]
 
   @@map("supported_languages")
 }
 
 model UserLanguagePreference {
-  id           String   @id @default(uuid())
-  userId       String   @unique @map("user_id")
-  languageCode String   @map("language_code")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  language SupportedLanguage @relation(fields: [languageCode], references: [code])
+  id           String            @id @default(uuid())
+  userId       String            @unique @map("user_id")
+  languageCode String            @map("language_code")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  language     SupportedLanguage @relation(fields: [languageCode], references: [code])
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_language_preferences")
 }
 
 model WorryPrompt {
-  id          String   @id @default(uuid())
-  text        String   @unique
-  isActive    Boolean  @default(true) @map("is_active")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  text      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("worry_prompts")
 }
 
 model ModerationQueue {
-  id              String    @id @default(uuid())
-  commentId       String    @map("comment_id")
-  flaggedReasons  String?   @map("flagged_reasons") // Comma-separated values
-  status          String    @default("pending") // 'pending', 'reviewed'
-  reviewedBy      String?   @map("reviewed_by")
-  reviewedAt      DateTime? @map("reviewed_at")
-  reviewNotes     String?   @map("review_notes")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  commentId      String    @unique @map("comment_id")
+  flaggedReasons String?   @map("flagged_reasons")
+  status         String    @default("pending")
+  reviewedBy     String?   @map("reviewed_by")
+  reviewedAt     DateTime? @map("reviewed_at")
+  reviewNotes    String?   @map("review_notes")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  comment        Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  // Relations
-  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@unique([commentId])
   @@map("moderation_queue")
 }
 
@@ -353,120 +341,111 @@ model CommentReport {
   id         String   @id @default(uuid())
   commentId  String   @map("comment_id")
   reporterId String   @map("reporter_id")
-  reason     String   // 'spam', 'harassment', 'inappropriate', 'misinformation', 'other'
+  reason     String
   details    String?
   createdAt  DateTime @default(now()) @map("created_at")
+  comment    Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporter   User     @relation("CommentReports", fields: [reporterId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // Relations
-  comment  Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  reporter User    @relation("CommentReports", fields: [reporterId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([commentId, reporterId]) // Prevent duplicate reports from same user
+  @@unique([commentId, reporterId])
   @@map("comment_reports")
 }
 
-// Guided Exercises and Coping Techniques
 model Exercise {
-  id          String   @id @default(uuid())
+  id          String             @id @default(uuid())
   title       String
   description String
   category    String
-  duration    Int      // in minutes
-  difficulty  String   // beginner, intermediate, advanced
-  steps       ExerciseStep[]
-  tags        String? // Comma-separated values
+  duration    Int
+  difficulty  String
+  tags        String?
   imageUrl    String?
   videoUrl    String?
   audioUrl    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
   progress    ExerciseProgress[]
+  steps       ExerciseStep[]
 
   @@map("exercises")
 }
 
 model ExerciseStep {
-  id          String   @id @default(uuid())
-  exerciseId  String   @map("exercise_id")
-  order       Int
-  title       String
-  content     String
-  duration    Int?     // in seconds
-  imageUrl    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  exerciseId String   @map("exercise_id")
+  order      Int
+  title      String
+  content    String
+  duration   Int?
+  imageUrl   String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@map("exercise_steps")
 }
 
 model CopingTechnique {
-  id                String     @id @default(uuid())
-  title             String
-  description       String
-  category          String
-  instructions      String
-  whenToUse         String? // Comma-separated values
-  effectiveness     Int        // 1-5 scale
-  scienceBasedRating Int       @map("science_based_rating") // 1-5 scale
-  tags              String? // Comma-separated values
-  imageUrl          String?
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
-  resources         Resource[]
+  id                 String     @id @default(uuid())
+  title              String
+  description        String
+  category           String
+  instructions       String
+  whenToUse          String?
+  effectiveness      Int
+  scienceBasedRating Int        @map("science_based_rating")
+  tags               String?
+  imageUrl           String?
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  resources          Resource[]
 
   @@map("coping_techniques")
 }
 
 model Resource {
-  id                String   @id @default(uuid())
-  copingTechniqueId String?  @map("coping_technique_id")
+  id                String           @id @default(uuid())
+  copingTechniqueId String?          @map("coping_technique_id")
   title             String
   description       String
   url               String
-  type              String   // article, video, audio, book, app, website
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  copingTechnique   CopingTechnique? @relation(fields: [copingTechniqueId], references: [id], onDelete: SetNull)
+  type              String
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  copingTechnique   CopingTechnique? @relation(fields: [copingTechniqueId], references: [id])
 
   @@map("resources")
 }
 
 model ExerciseProgress {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  exerciseId  String    @map("exercise_id")
-  currentStep Int       @map("current_step")
-  completed   Boolean   @default(false)
-  startedAt   DateTime  @map("started_at")
-  completedAt DateTime? @map("completed_at")
-  notes       String?
-  rating      Int?      // 1-5 scale
-  effectiveness Int?    // 1-5 scale
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  exerciseId    String    @map("exercise_id")
+  currentStep   Int       @map("current_step")
+  completed     Boolean   @default(false)
+  startedAt     DateTime  @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  notes         String?
+  rating        Int?
+  effectiveness Int?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  exercise      Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("exercise_progress")
 }
 
 model AIReprocessingQueue {
   id          String    @id @default(uuid())
-  contentType String    @map("content_type") // 'comment', 'post', 'worry_analysis'
-  contentId   String?   @map("content_id") // Reference to the content that needs reprocessing
-  content     String // The actual content to reprocess
-  reason      String    // 'rate_limit', 'service_unavailable', 'error'
-  status      String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  contentType String    @map("content_type")
+  contentId   String?   @map("content_id")
+  content     String
+  reason      String
+  status      String    @default("pending")
   retryCount  Int       @default(0) @map("retry_count")
   lastError   String?   @map("last_error")
-  result      String? // JSON result from successful processing
+  result      String?
   processedAt DateTime? @map("processed_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -475,19 +454,18 @@ model AIReprocessingQueue {
 }
 
 model GeographicAnalytics {
-  id            String   @id @default(uuid())
-  country       String   // Anonymized country code (e.g., 'US', 'UK', 'CA')
-  region        String?  // Anonymized region/state (optional)
-  category      String   // Worry category
-  subcategory   String?  // Worry subcategory
-  sentiment     Decimal // Average sentiment score
-  count         Int      // Number of posts/worries
-  period        String   // Time period (e.g., '2024-01', '2024-W01')
-  periodType    String   // 'month', 'week', 'day'
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  country     String
+  region      String?
+  category    String
+  subcategory String?
+  sentiment   Decimal
+  count       Int
+  period      String
+  periodType  String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Ensure we can't accidentally identify users - enforce minimum thresholds
   @@unique([country, region, category, period, periodType])
   @@map("geographic_analytics")
 }

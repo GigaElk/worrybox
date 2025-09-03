@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { postService, PostResponse, PostsQuery } from '../services/postService'
 import PostCard from './PostCard'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, RefreshCw, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useApiCall } from '../hooks/useApiCall'
+import { useSafeData, safeArray } from '../hooks/useSafeData'
+import LoadingState from './LoadingState'
+import EmptyState from './EmptyState'
 
 interface PostFeedProps {
   userId?: string
@@ -14,56 +18,79 @@ interface PostFeedProps {
 
 const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onPostDelete, onBlogEdit }) => {
   const [posts, setPosts] = useState<PostResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [offset, setOffset] = useState(0)
 
   const POSTS_PER_PAGE = 20
 
+  // Use the API call hook for better error handling and retry logic
+  const {
+    loading: isLoading,
+    error,
+    execute: executeApiCall,
+    retry,
+  } = useApiCall<{ posts: PostResponse[]; hasMore: boolean }>({
+    showErrorToast: false, // We'll handle errors manually
+    maxRetries: 2,
+  })
+
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  // Use safe data handling for posts array
+  const { data: safePosts, isEmpty: postsEmpty } = useSafeData(posts, {
+    fallback: [],
+    logErrors: true,
+  })
+
   const fetchPosts = useCallback(async (reset = false) => {
+    const currentOffset = reset ? 0 : offset
+    
+    if (!reset) {
+      setIsLoadingMore(true)
+    }
+
+    const fetchQuery: PostsQuery = {
+      ...query,
+      limit: POSTS_PER_PAGE,
+      offset: currentOffset,
+    }
+
     try {
-      const currentOffset = reset ? 0 : offset
-      setError(null)
+      const apiCall = () => userId 
+        ? postService.getUserPosts(userId, fetchQuery)
+        : postService.getPosts(fetchQuery)
+
+      const response = await executeApiCall(apiCall)
       
-      if (reset) {
-        setIsLoading(true)
-      } else {
-        setIsLoadingMore(true)
+      if (response) {
+        // Safely handle the response data
+        const newPosts = safeArray(response.posts, [])
+        
+        if (reset) {
+          setPosts(newPosts)
+          setOffset(newPosts.length)
+        } else {
+          setPosts(prev => {
+            const safePrev = safeArray(prev, [])
+            return [...safePrev, ...newPosts]
+          })
+          setOffset(prev => prev + newPosts.length)
+        }
+
+        setHasMore(response.hasMore || false)
       }
-
-      const fetchQuery: PostsQuery = {
-        ...query,
-        limit: POSTS_PER_PAGE,
-        offset: currentOffset,
-      }
-
-      const response = userId 
-        ? await postService.getUserPosts(userId, fetchQuery)
-        : await postService.getPosts(fetchQuery)
-
-      if (reset) {
-        setPosts(response.posts)
-        setOffset(response.posts.length)
-      } else {
-        setPosts(prev => [...prev, ...response.posts])
-        setOffset(prev => prev + response.posts.length)
-      }
-
-      setHasMore(response.hasMore)
     } catch (err: any) {
+      // Error is already handled by useApiCall hook
       const message = err.response?.data?.error?.message || 'Failed to load posts'
-      setError(message)
-      // Only show toast error for real errors, not empty feeds
-      if (!message.includes('Failed to load posts') && !message.includes('Failed to fetch posts')) {
+      
+      // Only show toast for unexpected errors, not empty states
+      if (!message.toLowerCase().includes('not found') && !message.toLowerCase().includes('empty')) {
         toast.error(message)
       }
     } finally {
-      setIsLoading(false)
       setIsLoadingMore(false)
     }
-  }, [userId, query, offset])
+  }, [userId, query, offset, executeApiCall])
 
   useEffect(() => {
     setOffset(0)
@@ -73,6 +100,19 @@ const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onP
   const handleRefresh = () => {
     setOffset(0)
     fetchPosts(true)
+  }
+
+  const handleRetry = () => {
+    retry(() => {
+      const fetchQuery: PostsQuery = {
+        ...query,
+        limit: POSTS_PER_PAGE,
+        offset: 0,
+      }
+      return userId 
+        ? postService.getUserPosts(userId, fetchQuery)
+        : postService.getPosts(fetchQuery)
+    })
   }
 
   const handleLoadMore = () => {
@@ -92,7 +132,11 @@ const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onP
   const handlePostDelete = async (postId: string) => {
     try {
       await postService.deletePost(postId)
-      setPosts(prev => prev.filter(post => post.id !== postId))
+      // Safely update posts array
+      setPosts(prev => {
+        const safePrev = safeArray(prev, [])
+        return safePrev.filter(post => post.id !== postId)
+      })
       toast.success('Post deleted successfully')
       onPostDelete?.(postId)
     } catch (error: any) {
@@ -111,47 +155,38 @@ const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onP
   //   setPosts(prev => [newPost, ...prev])
   // }
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading && postsEmpty) {
+    return <LoadingState text="Loading posts..." />
+  }
+
+  // Error state with retry option
+  if (error && postsEmpty) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto" />
-          <p className="mt-2 text-sm text-gray-600">Loading posts...</p>
-        </div>
-      </div>
+      <EmptyState
+        icon={MessageSquare}
+        title="Unable to load posts"
+        description={error.message || 'There was a problem loading the posts. Please try again.'}
+        action={{
+          label: 'Try Again',
+          onClick: handleRetry,
+        }}
+      />
     )
   }
 
-  if (error && posts.length === 0) {
-    // Don't show error for empty feed, just show empty state
-    if (error.includes('Failed to load posts') || error.includes('Failed to fetch posts')) {
-      // This is likely just an empty feed, not a real error
-    } else {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-600 rounded-md hover:bg-primary-50"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
-          </button>
-        </div>
-      )
-    }
-  }
-
-  if (posts.length === 0) {
+  // Empty state
+  if (postsEmpty && !isLoading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-600 mb-4">
-          {userId ? 'No posts found for this user.' : 'No posts to show yet.'}
-        </p>
-        <p className="text-sm text-gray-500">
-          {userId ? 'Check back later for new posts.' : 'Be the first to share a worry!'}
-        </p>
-      </div>
+      <EmptyState
+        icon={MessageSquare}
+        title={userId ? 'No posts yet' : 'No posts to show'}
+        description={
+          userId 
+            ? 'This user hasn\'t shared any posts yet. Check back later!'
+            : 'Be the first to share a worry and connect with the community.'
+        }
+      />
     )
   }
 
@@ -174,7 +209,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onP
 
       {/* Posts */}
       <div className="space-y-4">
-        {posts.map((post) => (
+        {safePosts.map((post) => (
           <PostCard
             key={post.id}
             post={post}
@@ -206,7 +241,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ userId, query = {}, onPostEdit, onP
       )}
 
       {/* End of Posts */}
-      {!hasMore && posts.length > 0 && (
+      {!hasMore && !postsEmpty && (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500">You've reached the end</p>
         </div>

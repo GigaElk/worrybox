@@ -6,6 +6,7 @@ import ComprehensiveFeed, { ComprehensiveFeedRef } from '../components/Comprehen
 import BlogContentEditor from '../components/BlogContentEditor'
 import { PostResponse } from '../services/postService'
 import { Plus, X } from 'lucide-react'
+import { FeedErrorBoundary, ComponentErrorBoundary } from '../components/SectionErrorBoundaries'
 
 const FeedPage: React.FC = () => {
   const { isAuthenticated } = useAuth()
@@ -78,10 +79,12 @@ const FeedPage: React.FC = () => {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <PostForm
-                  onPostCreated={handlePostCreated}
-                  onCancel={() => setShowPostForm(false)}
-                />
+                <ComponentErrorBoundary componentName="Post Form">
+                  <PostForm
+                    onPostCreated={handlePostCreated}
+                    onCancel={() => setShowPostForm(false)}
+                  />
+                </ComponentErrorBoundary>
               </div>
             ) : (
               <button
@@ -142,12 +145,14 @@ const FeedPage: React.FC = () => {
         )}
 
         {/* Comprehensive Feed */}
-        <ComprehensiveFeed
-          ref={feedRef}
-          onPostEdit={handlePostEdit}
-          onPostDelete={handlePostDelete}
-          onBlogEdit={handleBlogEdit}
-        />
+        <FeedErrorBoundary>
+          <ComprehensiveFeed
+            ref={feedRef}
+            onPostEdit={handlePostEdit}
+            onPostDelete={handlePostDelete}
+            onBlogEdit={handleBlogEdit}
+          />
+        </FeedErrorBoundary>
       </div>
     </div>
   )

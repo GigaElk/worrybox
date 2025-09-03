@@ -196,7 +196,9 @@ prisma/migrations/
 # Backend specific
 backend/dist/
 backend/build/
-backend/uploads/
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/profile-pictures/.gitkeep
 backend/logs/
 
 # Frontend specific

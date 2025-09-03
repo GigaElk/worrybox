@@ -3,6 +3,7 @@ import { User, Calendar, MapPin, Link as LinkIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import FollowButton from './FollowButton'
 import FollowStats from './FollowStats'
+import UserAvatar from './UserAvatar'
 
 interface UserProfileData {
   id: string
@@ -50,27 +51,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, className = '', onFollo
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start space-x-4">
           {/* Avatar */}
-          <div className="flex-shrink-0">
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.displayName || user.username}
-                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  target.nextElementSibling?.classList.remove('hidden')
-                }}
-              />
-            ) : null}
-            <div
-              className={`w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-200 ${
-                user.avatarUrl ? 'hidden' : ''
-              }`}
-            >
-              <User className="w-8 h-8 text-gray-400" />
-            </div>
-          </div>
+          <UserAvatar 
+            user={{
+              id: user.id,
+              username: user.username,
+              displayName: user.displayName,
+              avatarUrl: user.avatarUrl
+            }}
+            size="2xl"
+            className="border-2 border-gray-200"
+          />
 
           {/* User Info */}
           <div className="flex-1">

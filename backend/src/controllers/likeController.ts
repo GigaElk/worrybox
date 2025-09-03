@@ -33,15 +33,15 @@ export class LikeController {
       const like = await likeService.likePost(req.user.userId, postId);
 
       res.status(201).json({
-        message: 'Successfully liked post',
+        message: 'Successfully showed support for post',
         data: like,
       });
     } catch (error: any) {
       if (error.message === 'Already liked this post') {
         return res.status(400).json({
           error: {
-            code: 'ALREADY_LIKED',
-            message: error.message,
+            code: 'ALREADY_SHOWED_SUPPORT',
+            message: 'Already showed support for this post',
           },
           timestamp: new Date().toISOString(),
           path: req.path,
@@ -61,7 +61,7 @@ export class LikeController {
 
       res.status(500).json({
         error: {
-          code: 'LIKE_FAILED',
+          code: 'SUPPORT_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -87,14 +87,14 @@ export class LikeController {
       await likeService.unlikePost(req.user.userId, postId);
 
       res.json({
-        message: 'Successfully unliked post',
+        message: 'Successfully removed support from post',
       });
     } catch (error: any) {
       if (error.message === 'Not liked this post') {
         return res.status(400).json({
           error: {
-            code: 'NOT_LIKED',
-            message: error.message,
+            code: 'NOT_SHOWING_SUPPORT',
+            message: 'Not currently showing support for this post',
           },
           timestamp: new Date().toISOString(),
           path: req.path,
@@ -103,7 +103,7 @@ export class LikeController {
 
       res.status(500).json({
         error: {
-          code: 'UNLIKE_FAILED',
+          code: 'REMOVE_SUPPORT_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -150,7 +150,7 @@ export class LikeController {
 
       res.status(500).json({
         error: {
-          code: 'LIKES_FETCH_FAILED',
+          code: 'SUPPORT_FETCH_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -177,13 +177,14 @@ export class LikeController {
 
       res.json({
         data: {
-          isLiked,
+          isShowingSupport: isLiked,
+          userHasShownSupport: isLiked, // Backward compatibility
         },
       });
     } catch (error: any) {
       res.status(500).json({
         error: {
-          code: 'LIKE_CHECK_FAILED',
+          code: 'SUPPORT_CHECK_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),
@@ -199,13 +200,14 @@ export class LikeController {
 
       res.json({
         data: {
-          count,
+          supportCount: count,
+          count, // Backward compatibility
         },
       });
     } catch (error: any) {
       res.status(500).json({
         error: {
-          code: 'LIKE_COUNT_FAILED',
+          code: 'SUPPORT_COUNT_FAILED',
           message: error.message,
         },
         timestamp: new Date().toISOString(),

@@ -754,9 +754,9 @@ export class ErrorHandlingService {
       priority: 100,
       enabled: true,
       condition: (error, context) => {
-        return context.path?.includes('/api/') && 
+        return !!(context.path?.includes('/api/') && 
                !context.path?.includes('/auth') &&
-               error.message.includes('database');
+               error.message.includes('database'));
       },
       action: async (error, context) => {
         logger.info('Using cache fallback strategy', {
@@ -805,8 +805,8 @@ export class ErrorHandlingService {
       priority: 70,
       enabled: true,
       condition: (error, context) => {
-        return context.path?.includes('/api/') && 
-               error.message.includes('timeout');
+        return !!(context.path?.includes('/api/') && 
+               error.message.includes('timeout'));
       },
       action: async (error, context) => {
         logger.info('Using simplified response strategy', {

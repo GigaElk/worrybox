@@ -40,6 +40,12 @@ export interface PostResponse {
     displayName?: string;
     avatarUrl?: string;
   };
+  // Interaction counts
+  supportCount?: number;
+  meTooCount?: number;
+  similarWorryCount?: number; // Combined AI + MeToo count
+  userHasShownSupport?: boolean;
+  userHasMeToo?: boolean;
 }
 
 export interface PostsQuery {

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 interface LikeButtonProps {
   postId: string
-  onLikeChange?: (isLiked: boolean, likeCount: number) => void
+  onLikeChange?: (isSupported: boolean, supportCount: number) => void
   className?: string
   showCount?: boolean
 }
@@ -18,82 +18,89 @@ const LikeButton: React.FC<LikeButtonProps> = ({
   showCount = true 
 }) => {
   const { isAuthenticated } = useAuth()
-  const [isLiked, setIsLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
+  const [isSupported, setIsSupported] = useState(false)
+  const [supportCount, setSupportCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    const loadLikeData = async () => {
+    const loadSupportData = async () => {
       try {
         setIsChecking(true)
         
-        // Always load like count
+        // Always load support count
         const count = await likeService.getLikeCount(postId)
-        setLikeCount(count)
+        setSupportCount(count)
         
-        // Only check if user has liked if authenticated
+        // Only check if user has shown support if authenticated
         if (isAuthenticated) {
-          const liked = await likeService.isLiked(postId)
-          setIsLiked(liked)
+          const supported = await likeService.isLiked(postId)
+          setIsSupported(supported)
         }
       } catch (error) {
-        console.error('Failed to load like data:', error)
+        console.error('Failed to load support data:', error)
       } finally {
         setIsChecking(false)
       }
     }
 
-    loadLikeData()
+    loadSupportData()
   }, [postId, isAuthenticated])
 
-  const handleLike = async () => {
+  const handleSupport = async () => {
     if (!isAuthenticated) {
-      toast.error('Please log in to like posts')
+      toast.error('Please log in to show support')
       return
     }
 
     setIsLoading(true)
     try {
-      if (isLiked) {
+      if (isSupported) {
         await likeService.unlikePost(postId)
-        setIsLiked(false)
-        setLikeCount(prev => prev - 1)
-        onLikeChange?.(false, likeCount - 1)
+        setIsSupported(false)
+        setSupportCount(prev => prev - 1)
+        onLikeChange?.(false, supportCount - 1)
       } else {
         await likeService.likePost(postId)
-        setIsLiked(true)
-        setLikeCount(prev => prev + 1)
-        onLikeChange?.(true, likeCount + 1)
+        setIsSupported(true)
+        setSupportCount(prev => prev + 1)
+        onLikeChange?.(true, supportCount + 1)
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'Failed to update like status')
+      toast.error(error.response?.data?.error?.message || 'Failed to update support status')
     } finally {
       setIsLoading(false)
     }
   }
 
+  const getSupportText = () => {
+    if (supportCount === 0) return ''
+    if (supportCount === 1) return '1 person showed support'
+    return `${supportCount} people showed support`
+  }
+
   return (
     <button
-      onClick={handleLike}
+      onClick={handleSupport}
       disabled={isLoading || isChecking || !isAuthenticated}
       className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-        isLiked
+        isSupported
           ? 'text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100'
           : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
       } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-      title={isAuthenticated ? (isLiked ? 'Unlike' : 'Like') : 'Log in to like posts'}
+      title={isAuthenticated ? (isSupported ? 'Remove support' : 'Show support') : 'Log in to show support'}
+      aria-label={isAuthenticated ? (isSupported ? 'Remove support' : 'Show support') : 'Log in to show support'}
     >
       {isLoading || isChecking ? (
         <Loader2 className="w-5 h-5 animate-spin" />
       ) : (
         <Heart 
-          className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} 
+          className={`w-5 h-5 ${isSupported ? 'fill-current' : ''}`} 
         />
       )}
       {showCount && (
-        <span className="text-sm font-medium">
-          {likeCount}
+        <span className="text-sm font-medium" title={getSupportText()}>
+          {supportCount}
         </span>
       )}
     </button>

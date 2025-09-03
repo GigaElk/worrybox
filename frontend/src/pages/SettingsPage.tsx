@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSubscription } from '../contexts/SubscriptionContext'
 import { userService } from '../services/userService'
 import { authService } from '../services/authService'
+import { profilePictureService } from '../services/profilePictureService'
+import ProfilePictureUpload from '../components/ProfilePictureUpload'
+import UserAvatar from '../components/UserAvatar'
 import { toast } from 'react-hot-toast'
 
 interface UserSettings {
@@ -18,6 +21,8 @@ interface UserSettings {
   region: string
   city: string
   locationSharing: boolean
+  // Avatar field
+  avatarUrl: string | null
 }
 
 const SettingsPage: React.FC = () => {
@@ -34,7 +39,9 @@ const SettingsPage: React.FC = () => {
     country: '',
     region: '',
     city: '',
-    locationSharing: false
+    locationSharing: false,
+    // Avatar field
+    avatarUrl: null
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -53,7 +60,9 @@ const SettingsPage: React.FC = () => {
         country: user.country || '',
         region: user.region || '',
         city: user.city || '',
-        locationSharing: user.locationSharing || false
+        locationSharing: user.locationSharing || false,
+        // Avatar field
+        avatarUrl: user.avatarUrl || null
       })
     }
   }, [user])
@@ -108,6 +117,36 @@ const SettingsPage: React.FC = () => {
     }
   }
 
+  const handleAvatarUploadSuccess = (avatarUrl: string) => {
+    setSettings(prev => ({
+      ...prev,
+      avatarUrl: avatarUrl
+    }))
+    // Refresh user context to update avatar across app
+    refreshUser()
+    toast.success('Profile picture updated successfully!')
+  }
+
+  const handleAvatarUploadError = (error: string) => {
+    console.error('Avatar upload failed:', error)
+    toast.error(`Failed to upload profile picture: ${error}`)
+  }
+
+  const handleAvatarRemove = async () => {
+    try {
+      await profilePictureService.deleteProfilePicture()
+      setSettings(prev => ({
+        ...prev,
+        avatarUrl: null
+      }))
+      refreshUser()
+      toast.success('Profile picture removed successfully!')
+    } catch (error: any) {
+      console.error('Avatar removal failed:', error)
+      toast.error('Failed to remove profile picture. Please try again.')
+    }
+  }
+
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -135,7 +174,47 @@ const SettingsPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Profile Picture Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Profile Picture
+              </label>
+              <div className="flex items-start space-x-4">
+                {/* Current Avatar Display */}
+                <div className="flex-shrink-0">
+                  <UserAvatar 
+                    user={{ 
+                      id: user.id,
+                      username: user.username, 
+                      avatarUrl: settings.avatarUrl 
+                    }} 
+                    size="lg" 
+                  />
+                </div>
+                
+                {/* Upload Component */}
+                <div className="flex-1">
+                  <ProfilePictureUpload
+                    currentAvatarUrl={settings.avatarUrl}
+                    onUploadSuccess={handleAvatarUploadSuccess}
+                    onUploadError={handleAvatarUploadError}
+                    className="w-full"
+                  />
+                  
+                  {/* Remove Button (if avatar exists) */}
+                  {settings.avatarUrl && (
+                    <button
+                      onClick={handleAvatarRemove}
+                      className="mt-2 text-sm text-red-600 hover:text-red-800 focus:outline-none focus:underline"
+                    >
+                      Remove profile picture
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
                 Display Name

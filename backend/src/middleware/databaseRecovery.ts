@@ -104,8 +104,8 @@ export class DatabaseRecoveryMiddleware {
       }
 
       // Override res.end to capture metrics
-      const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]) {
+      const originalEnd = res.end.bind(res);
+      res.end = function(this: Response, ...args: any[]): any {
         const duration = Date.now() - startTime;
         
         // Get database metrics
@@ -132,8 +132,8 @@ export class DatabaseRecoveryMiddleware {
           });
         }
 
-        return originalEnd.apply(this, args);
-      };
+        return originalEnd(...args);
+      } as any;
 
       next();
     };

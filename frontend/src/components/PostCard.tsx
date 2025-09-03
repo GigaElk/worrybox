@@ -4,11 +4,14 @@ import { User, Globe, Users, Lock, MoreHorizontal, Edit, Trash2, Calendar, FileT
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import LikeButton from './LikeButton'
+import MeTooButton from './MeTooButton'
+import UserAvatar from './UserAvatar'
 import CommentSection from './CommentSection'
 import SimilarWorries from './SimilarWorries'
 import ResolutionModal from './ResolutionModal'
 import ResolutionDisplay from './ResolutionDisplay'
 import { worryResolutionService, WorryResolution } from '../services/worryResolutionService'
+import { useSafeData, safeString, safeNumber } from '../hooks/useSafeData'
 
 interface PostCardProps {
   post: PostResponse
@@ -26,8 +29,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
   const [showResolutionModal, setShowResolutionModal] = useState(false)
   const [, setIsLoadingResolution] = useState(false)
 
-  const isOwner = currentUser?.id === post.userId
-  const hasLongContent = post.longContent && post.longContent.length > 0
+  // Safe data handling for post properties
+  const { data: safePost } = useSafeData(post, { logErrors: true })
+  const safeShortContent = safeString(safePost?.shortContent, 'No content available')
+  const safeLongContent = safeString(safePost?.longContent, '')
+  const safeWorryPrompt = safeString(safePost?.worryPrompt, 'General worry')
+  const safeUserDisplayName = safeString(safePost?.user?.displayName || safePost?.user?.username, 'Unknown User')
+
+  const isOwner = currentUser?.id === safePost?.userId
+  const hasLongContent = safeLongContent.length > 0
+
+  // Handle potential null/undefined post gracefully
+  if (!safePost) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <p className="text-gray-500 text-center">Post data unavailable</p>
+      </div>
+    )
+  }
 
   // Load resolution data when component mounts
   useEffect(() => {
@@ -66,6 +85,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
     }
     setShowMenu(false)
   }
+
+
 
   const getPrivacyIcon = () => {
     switch (post.privacyLevel) {
@@ -120,27 +141,15 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start space-x-3">
           {/* Avatar */}
-          <div className="flex-shrink-0">
-            {post.user.avatarUrl ? (
-              <img
-                src={post.user.avatarUrl}
-                alt={post.user.displayName || post.user.username}
-                className="w-10 h-10 rounded-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  target.nextElementSibling?.classList.remove('hidden')
-                }}
-              />
-            ) : null}
-            <div
-              className={`w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ${
-                post.user.avatarUrl ? 'hidden' : ''
-              }`}
-            >
-              <User className="w-5 h-5 text-gray-400" />
-            </div>
-          </div>
+          <UserAvatar 
+            user={{
+              id: post.userId,
+              username: post.user.username,
+              displayName: post.user.displayName,
+              avatarUrl: post.user.avatarUrl
+            }}
+            size="md"
+          />
 
           {/* User Info */}
           <div className="flex-1">
@@ -300,17 +309,23 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
         )}
       </div>
 
-      {/* Similar Worries */}
+      {/* Count Metrics - Only numbers, no content */}
       {post.privacyLevel === 'public' && (
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <SimilarWorries postId={post.id} limit={3} />
+          <div className="flex justify-start">
+            {/* Similar Worries Count - AI + Me Too combined - moved to left */}
+            <SimilarWorries postId={post.id} />
+          </div>
         </div>
       )}
 
       {/* Social Actions */}
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between">
-          <LikeButton postId={post.id} />
+          <div className="flex items-center space-x-3">
+            <LikeButton postId={post.id} />
+            <MeTooButton postId={post.id} />
+          </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => window.open(`/analysis/${post.id}`, '_blank')}

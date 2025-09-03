@@ -117,10 +117,10 @@ export class ComprehensiveLoggingMiddleware {
       }
 
       // Override res.end to capture response
-      const originalEnd = res.end;
-      res.end = (...args: any[]) => {
+      const originalEnd = res.end.bind(res);
+      res.end = (...args: any[]): any => {
         this.logResponse(req, res, context);
-        return originalEnd.apply(res, args);
+        return originalEnd(...args);
       };
 
       // Handle errors
@@ -159,31 +159,41 @@ export class ComprehensiveLoggingMiddleware {
       const context = (req as any).loggingContext as RequestContext;
       if (!context) return next();
 
-      // Check for slow operations periodically
-      const checkInterval = setInterval(() => {
-        const duration = Date.now() - context.startTime;
-        
-        if (duration > this.config.slowRequestThreshold) {
-          this.logger.warn('Slow request detected', {
-            correlationId: context.correlationId,
-            requestId: context.requestId,
-            method: req.method,
-            path: req.path,
-            duration,
-            category: 'slow_request',
-            userAgent: req.get('User-Agent'),
-            ip: this.getClientIP(req),
-          });
-        }
-      }, this.config.slowRequestThreshold);
+      // Check for slow operations periodically (only if enabled)
+      let checkInterval: NodeJS.Timeout | null = null;
+      if (this.config.enableSlowRequestLogging) {
+        checkInterval = setInterval(() => {
+          const duration = Date.now() - context.startTime;
+          
+          if (duration > this.config.slowRequestThreshold) {
+            this.logger.warn('Slow request detected', {
+              correlationId: context.correlationId,
+              requestId: context.requestId,
+              method: req.method,
+              path: req.path,
+              duration,
+              category: 'slow_request',
+              userAgent: req.get('User-Agent'),
+              ip: this.getClientIP(req),
+            });
+          }
+        }, this.config.slowRequestThreshold);
+      }
 
       res.on('finish', () => {
-        clearInterval(checkInterval);
+        if (checkInterval) {
+          clearInterval(checkInterval);
+        }
       });
 
       next();
     };
   }
+
+  private lastMemoryWarning: number = 0;
+  private memoryWarningCooldown: number = 60000; // 1 minute cooldown
+  private stableHighMemoryThreshold: number = 5; // 5 consecutive high memory readings
+  private consecutiveHighMemoryCount: number = 0;
 
   /**
    * Memory usage monitoring middleware
@@ -200,18 +210,45 @@ export class ComprehensiveLoggingMiddleware {
       res.on('finish', () => {
         const endMemory = process.memoryUsage();
         const memoryDelta = Math.round((endMemory.heapUsed - context.startMemory.heapUsed) / 1024 / 1024);
+        const currentMemoryMB = Math.round(endMemory.heapUsed / 1024 / 1024);
+        const now = Date.now();
 
         if (memoryDelta > this.config.memoryThreshold) {
-          this.logger.warn('High memory usage detected', {
-            correlationId: context.correlationId,
-            requestId: context.requestId,
-            method: req.method,
-            path: req.path,
-            memoryDelta,
-            memoryBefore: Math.round(context.startMemory.heapUsed / 1024 / 1024),
-            memoryAfter: Math.round(endMemory.heapUsed / 1024 / 1024),
-            category: 'memory_usage',
-          });
+          // Check if memory usage is consistently high (stable high usage)
+          if (currentMemoryMB > 100) { // High memory threshold
+            this.consecutiveHighMemoryCount++;
+          } else {
+            this.consecutiveHighMemoryCount = 0;
+          }
+
+          // Reduce warning frequency for stable high usage (Requirement 6.5)
+          const isStableHighMemory = this.consecutiveHighMemoryCount >= this.stableHighMemoryThreshold;
+          const shouldLogWarning = !isStableHighMemory || (now - this.lastMemoryWarning) > this.memoryWarningCooldown;
+
+          if (shouldLogWarning) {
+            const logLevel = isStableHighMemory ? 'info' : 'warn';
+            const message = isStableHighMemory 
+              ? 'Stable high memory usage detected' 
+              : 'High memory usage detected';
+
+            this.logger[logLevel](message, {
+              correlationId: context.correlationId,
+              requestId: context.requestId,
+              method: req.method,
+              path: req.path,
+              memoryDelta,
+              memoryBefore: Math.round(context.startMemory.heapUsed / 1024 / 1024),
+              memoryAfter: currentMemoryMB,
+              consecutiveHighCount: this.consecutiveHighMemoryCount,
+              isStableHigh: isStableHighMemory,
+              category: isStableHighMemory ? 'stable_memory_usage' : 'memory_usage',
+            });
+
+            this.lastMemoryWarning = now;
+          }
+        } else {
+          // Reset consecutive count if memory usage is normal
+          this.consecutiveHighMemoryCount = 0;
         }
       });
 
@@ -236,6 +273,9 @@ export class ComprehensiveLoggingMiddleware {
   // Private methods
 
   private logRequest(req: Request, context: RequestContext): void {
+    // Ensure correlation ID consistency (Requirement 6.6)
+    this.correlationService.setCorrelationId(context.correlationId);
+
     const requestData: any = {
       correlationId: context.correlationId,
       requestId: context.requestId,
@@ -247,6 +287,7 @@ export class ComprehensiveLoggingMiddleware {
       ip: this.getClientIP(req),
       contentLength: req.get('Content-Length'),
       category: 'request',
+      timestamp: new Date().toISOString(),
     };
 
     // Add request body if enabled and within size limit
@@ -294,19 +335,38 @@ export class ComprehensiveLoggingMiddleware {
       );
     }
 
-    // Determine log level based on status code and performance
+    // Improved log level determination based on requirements
     let level: 'info' | 'warn' | 'error' = 'info';
+    
     if (res.statusCode >= 500) {
       level = 'error';
-    } else if (res.statusCode >= 400 || duration > this.config.slowRequestThreshold) {
+    } else if (res.statusCode === 404) {
+      // Log 404s at INFO level instead of WARN to reduce noise (Requirement 6.1)
+      level = 'info';
+      responseData.category = 'not_found';
+    } else if (res.statusCode >= 400) {
       level = 'warn';
+    } else if (duration > this.config.slowRequestThreshold) {
+      level = 'warn';
+      responseData.category = 'slow_response';
     }
 
-    this.logger[level]('Request completed', responseData);
+    // Avoid duplicate log entries for successful requests (Requirement 6.2)
+    if (res.statusCode < 400 && duration <= this.config.slowRequestThreshold) {
+      // Only log successful requests at debug level to reduce noise
+      this.logger.debug('Request completed successfully', responseData);
+    } else {
+      this.logger[level]('Request completed', responseData);
+    }
   }
 
   private logError(error: Error, req: Request, res: Response, context?: RequestContext): void {
     if (!this.config.enableErrorLogging) return;
+
+    // Ensure correlation ID consistency across all error log entries (Requirement 6.6)
+    if (context?.correlationId) {
+      this.correlationService.setCorrelationId(context.correlationId);
+    }
 
     const errorContext = {
       correlationId: context?.correlationId,
@@ -317,6 +377,7 @@ export class ComprehensiveLoggingMiddleware {
       ip: this.getClientIP(req),
       statusCode: res.statusCode,
       duration: context ? Date.now() - context.startTime : undefined,
+      timestamp: new Date().toISOString(),
     };
 
     if (this.config.enableDetailedErrorContext) {
@@ -333,12 +394,14 @@ export class ComprehensiveLoggingMiddleware {
         userImpact: true,
       });
 
-      // Log system state
+      // Log system state with consistent correlation ID
       this.logger.logSystemState('Error occurred - system state', {
+        correlationId: context?.correlationId,
         memoryUsage,
         cpuUsage,
         uptime: process.uptime(),
         errorRate: this.calculateErrorRate(),
+        timestamp: new Date().toISOString(),
       });
     } else {
       this.logger.error('Request error', error, errorContext);

@@ -5,6 +5,8 @@ import { userService, UserProfile } from '../services/userService'
 import { useAuth } from '../contexts/AuthContext'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import UserProfileComponent from '../components/UserProfile'
+import FollowList from '../components/FollowList'
 
 const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>()
@@ -13,6 +15,7 @@ const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following'>('posts')
 
   const isOwnProfile = currentUser?.username === username
 
@@ -53,6 +56,10 @@ const ProfilePage: React.FC = () => {
     navigate('/profile/edit')
   }
 
+  const handleFollowStatsClick = (type: 'followers' | 'following') => {
+    setActiveTab(type)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -84,87 +91,91 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg">
-          {/* Header */}
-          <div className="px-6 py-8 border-b border-gray-200">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-6">
-                {/* Avatar */}
-                <div className="flex-shrink-0">
-                  {profile.avatarUrl ? (
-                    <img
-                      src={profile.avatarUrl}
-                      alt={profile.displayName || profile.username}
-                      className="w-24 h-24 rounded-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                        target.nextElementSibling?.classList.remove('hidden')
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className={`w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center ${
-                      profile.avatarUrl ? 'hidden' : ''
-                    }`}
-                  >
-                    <User className="w-12 h-12 text-gray-400" />
-                  </div>
-                </div>
-
-                {/* Profile Info */}
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {profile.displayName || profile.username}
-                  </h1>
-                  {profile.displayName && (
-                    <p className="text-lg text-gray-600">@{profile.username}</p>
-                  )}
-                  
-                  <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                    {isOwnProfile && profile.email && (
-                      <div className="flex items-center">
-                        <Mail className="w-4 h-4 mr-1" />
-                        {profile.email}
-                        {!profile.emailVerified && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                            Unverified
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      Joined {format(new Date(profile.createdAt), 'MMMM yyyy')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Edit Button */}
-              {isOwnProfile && (
-                <button
-                  onClick={handleEditProfile}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </button>
-              )}
-            </div>
-
-            {/* Bio */}
-            {profile.bio && (
-              <div className="mt-6">
-                <p className="text-gray-700 whitespace-pre-wrap">{profile.bio}</p>
-              </div>
+        <div className="space-y-6">
+          {/* Profile Header */}
+          <div className="flex items-start justify-between">
+            <UserProfileComponent 
+              user={profile} 
+              onFollowStatsClick={handleFollowStatsClick}
+            />
+            
+            {/* Edit Button */}
+            {isOwnProfile && (
+              <button
+                onClick={handleEditProfile}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Profile
+              </button>
             )}
           </div>
 
-          {/* Content Area */}
-          <div className="px-6 py-8">
-            <div className="text-center text-gray-500">
-              <p>Posts and activity will appear here once the worry posting system is implemented.</p>
+          {/* Email Info for Own Profile */}
+          {isOwnProfile && profile.email && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center text-sm text-gray-600">
+                <Mail className="w-4 h-4 mr-2" />
+                <span>{profile.email}</span>
+                {!profile.emailVerified && (
+                  <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                    Unverified
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab Navigation */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            <nav className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('posts')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                  activeTab === 'posts'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Posts
+              </button>
+              <button
+                onClick={() => setActiveTab('followers')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                  activeTab === 'followers'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Followers
+              </button>
+              <button
+                onClick={() => setActiveTab('following')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                  activeTab === 'following'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Following
+              </button>
+            </nav>
+
+            {/* Tab Content */}
+            <div className="p-6">
+              {activeTab === 'posts' && (
+                <div className="text-center text-gray-500 py-8">
+                  <p>Posts and activity will appear here once the worry posting system is implemented.</p>
+                </div>
+              )}
+
+              {activeTab === 'followers' && (
+                <FollowList userId={profile.id} type="followers" />
+              )}
+
+              {activeTab === 'following' && (
+                <FollowList userId={profile.id} type="following" />
+              )}
             </div>
           </div>
         </div>

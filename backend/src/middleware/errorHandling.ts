@@ -74,8 +74,8 @@ export class ErrorHandlingMiddleware {
       const startTime = Date.now();
 
       // Override res.end to capture completion metrics
-      const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]) {
+      const originalEnd = res.end.bind(res);
+      res.end = function(this: Response, ...args: any[]): any {
         try {
           const duration = Date.now() - startTime;
           const correlationId = req.correlationId || 'unknown';
@@ -109,8 +109,8 @@ export class ErrorHandlingMiddleware {
           });
         }
 
-        return originalEnd.apply(this, args);
-      };
+        return originalEnd(...args);
+      } as any;
 
       next();
     };
