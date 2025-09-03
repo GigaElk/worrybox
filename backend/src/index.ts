@@ -121,10 +121,6 @@ app.get("/health", async (req, res) => {
 });
 
 app.get("/api/health", async (req, res) => {
-  // Temporarily bypassed for debugging startup issues
-  console.log('HEALTH CHECK ENDPOINT WAS HIT');
-  res.status(200).json({ status: "ok" });
-  /*
   try {
     await initializeServices();
     const healthStatus = await healthCheckService.performEnhancedHealthCheck();
@@ -138,7 +134,6 @@ app.get("/api/health", async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   }
-  */
 });
 
 // Database wake-up endpoint

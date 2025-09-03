@@ -13,6 +13,8 @@ import { authenticateToken } from '../middleware/auth';
 const router = Router();
 const worryResolutionController = new WorryResolutionController();
 
+router.get('/test', (req, res) => res.send('Worry resolution route is working!'));
+
 // Public routes (no authentication required)
 router.get('/stories', getPublicResolutionStoriesValidation, worryResolutionController.getPublicResolutionStories);
 

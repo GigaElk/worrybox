@@ -163,7 +163,7 @@ export class HealthCheckService {
       });
 
       // Log warnings for concerning metrics
-      if (metrics.memoryUsage.usagePercent > 80) {
+      if (metrics.memoryUsage.usagePercent > 95) {
         logger.warn('High memory usage detected', {
           correlationId,
           memoryUsage: metrics.memoryUsage,
@@ -300,12 +300,91 @@ export class HealthCheckService {
   }
 
   private async checkEnhancedMemory(): Promise<HealthCheckResult> {
-    // Temporarily bypassed for debugging startup issues
-    return {
-      status: 'pass',
-      message: 'Memory check bypassed for debugging',
-      lastChecked: new Date().toISOString(),
-    };
+    try {
+      const memoryHealthMetrics = this.memoryManager.getHealthMetrics();
+      const memoryMetrics = this.getMemoryMetrics();
+
+      // Use memory manager's status determination
+      const status = memoryHealthMetrics.status;
+      
+      if (status === 'emergency') {
+        // Memory manager will handle emergency cleanup
+        await this.memoryManager.checkMemoryPressure();
+        
+        return {
+          status: 'fail',
+          message: 'Memory usage critical - emergency cleanup triggered',
+          lastChecked: new Date().toISOString(),
+          details: {
+            ...memoryMetrics,
+            memoryManagerStatus: status,
+            trend: memoryHealthMetrics.trend,
+            leakDetection: memoryHealthMetrics.leakDetection,
+            recentAlerts: memoryHealthMetrics.recentAlerts?.length || 0,
+          },
+        };
+      }
+
+      if (status === 'critical') {
+        return {
+          status: 'fail',
+          message: 'Memory usage critical',
+          lastChecked: new Date().toISOString(),
+          details: {
+            ...memoryMetrics,
+            memoryManagerStatus: status,
+            trend: memoryHealthMetrics.trend,
+            recommendations: memoryHealthMetrics.recommendations,
+          },
+        };
+      }
+
+      if (status === 'warning') {
+        return {
+          status: 'warn',
+          message: 'Memory usage high',
+          lastChecked: new Date().toISOString(),
+          details: {
+            ...memoryMetrics,
+            memoryManagerStatus: status,
+            trend: memoryHealthMetrics.trend,
+          },
+        };
+      }
+
+      if (memoryHealthMetrics.leakDetection.detected) {
+        return {
+          status: 'warn',
+          message: `Potential memory leak detected (${memoryHealthMetrics.leakDetection.confidence}% confidence)`,
+          lastChecked: new Date().toISOString(),
+          details: {
+            ...memoryMetrics,
+            memoryManagerStatus: status,
+            leakDetection: memoryHealthMetrics.leakDetection,
+          },
+        };
+      }
+
+      return {
+        status: 'pass',
+        message: 'Memory usage normal',
+        lastChecked: new Date().toISOString(),
+        details: {
+          ...memoryMetrics,
+          memoryManagerStatus: status,
+          trend: memoryHealthMetrics.trend,
+          gcStats: memoryHealthMetrics.gcStats,
+        },
+      };
+    } catch (error) {
+      logger.error('Enhanced memory health check failed', error);
+      return {
+        status: 'fail',
+        message: 'Memory check failed',
+        lastChecked: new Date().toISOString(),
+        details: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   private async checkSchedulers(): Promise<HealthCheckResult> {

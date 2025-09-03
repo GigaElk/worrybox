@@ -12,6 +12,6 @@ router.get('/:postId/check', authenticateToken, likeController.isLiked);
 
 // Public routes (no authentication required)
 router.get('/:postId', getLikesValidation, likeController.getLikes);
-router.get('/:postId/count', likeController.getLikeCount);
+router.get('/:postId/stats', likeController.getLikeCount);
 
 export default router;
