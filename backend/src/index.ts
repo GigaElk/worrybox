@@ -210,6 +210,14 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/demographics", demographicAnalyticsRoutes);
 app.use("/api/resolutions", worryResolutionRoutes);
+
+console.log('--- REGISTERED RESOLUTION ROUTES ---');
+worryResolutionRoutes.stack.forEach(function(r){
+  if (r.route && r.route.path){
+    console.log(r.route.path)
+  }
+});
+console.log('------------------------------------');
 app.use("/api/wellness", wellnessRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/languages", languagesRoutes);
