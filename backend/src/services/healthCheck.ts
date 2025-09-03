@@ -307,8 +307,9 @@ export class HealthCheckService {
       // Use memory manager's status determination
       const status = memoryHealthMetrics.status;
       
-      // Temporarily disabled to debug startup issues
-      if (status === 'emergency' && 1 === 0) {
+            if (status === 'emergency') {
+        // Temporarily disabled to debug startup issues
+        /*
         // Memory manager will handle emergency cleanup
         await this.memoryManager.checkMemoryPressure();
         
@@ -324,10 +325,12 @@ export class HealthCheckService {
             recentAlerts: memoryHealthMetrics.recentAlerts?.length || 0,
           },
         };
+        */
       }
 
-      // Temporarily disabled to debug startup issues
-      if (status === 'critical' && 1 === 0) {
+            if (status === 'critical') {
+        // Temporarily disabled to debug startup issues
+        /*
         return {
           status: 'fail',
           message: 'Memory usage critical',
@@ -339,10 +342,12 @@ export class HealthCheckService {
             recommendations: memoryHealthMetrics.recommendations,
           },
         };
+        */
       }
 
-      // Temporarily disabled to debug startup issues
-      if (status === 'warning' && 1 === 0) {
+            if (status === 'warning') {
+        // Temporarily disabled to debug startup issues
+        /*
         return {
           status: 'warn',
           message: 'Memory usage high',
@@ -353,6 +358,7 @@ export class HealthCheckService {
             trend: memoryHealthMetrics.trend,
           },
         };
+        */
       }
 
       if (memoryHealthMetrics.leakDetection.detected) {
