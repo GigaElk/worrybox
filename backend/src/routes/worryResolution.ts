@@ -13,7 +13,7 @@ import { authenticateToken } from '../middleware/auth';
 const router = Router();
 const worryResolutionController = new WorryResolutionController();
 
-router.get('/test', (req, res) => res.send('Worry resolution route is working!'));
+
 
 // Public routes (no authentication required)
 router.get('/stories', getPublicResolutionStoriesValidation, worryResolutionController.getPublicResolutionStories);
@@ -27,7 +27,7 @@ router.put('/posts/:postId/resolve', updateResolutionValidation, worryResolution
 router.delete('/posts/:postId/resolve', getResolutionValidation, worryResolutionController.unresolveWorry);
 
 // Get resolution data
-router.get('/posts/:postId', getResolutionValidation, worryResolutionController.getResolution);
+router.get('/posts/:postId', worryResolutionController.getResolution);
 router.get('/users/:userId/resolved', getUserResolvedWorriesValidation, worryResolutionController.getUserResolvedWorries);
 router.get('/stats', worryResolutionController.getResolutionStats);
 

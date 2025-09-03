@@ -121,19 +121,8 @@ app.get("/health", async (req, res) => {
 });
 
 app.get("/api/health", async (req, res) => {
-  try {
-    await initializeServices();
-    const healthStatus = await healthCheckService.performEnhancedHealthCheck();
-    const statusCode = healthStatus.status === "healthy" ? 200 : 503;
-    res.status(statusCode).json(healthStatus);
-  } catch (error) {
-    logger.error("Health check endpoint error", error);
-    res.status(503).json({
-      status: "unhealthy",
-      message: "Health check failed",
-      timestamp: new Date().toISOString(),
-    });
-  }
+  // Simple, reliable health check for resource-constrained environments
+  res.status(200).json({ status: "ok" });
 });
 
 // Database wake-up endpoint

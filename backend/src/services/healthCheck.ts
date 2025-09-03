@@ -163,7 +163,7 @@ export class HealthCheckService {
       });
 
       // Log warnings for concerning metrics
-      if (metrics.memoryUsage.usagePercent > 95) {
+      if (metrics.memoryUsage.usagePercent > 80) {
         logger.warn('High memory usage detected', {
           correlationId,
           memoryUsage: metrics.memoryUsage,
