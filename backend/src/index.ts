@@ -185,7 +185,7 @@ import worryAnalysisRoutes from "./routes/worryAnalysis";
 import subscriptionRoutes from "./routes/subscriptions";
 import analyticsRoutes from "./routes/analytics";
 import demographicAnalyticsRoutes from "./routes/demographicAnalytics";
-import worryResolutionRoutes from "./routes/worryResolution";
+import { worryResolutionRoutes } from "./routes/worryResolution";
 import notificationsRoutes from "./routes/notifications";
 import languagesRoutes from "./routes/languages";
 import dashboardRoutes from "./routes/dashboard";
@@ -211,13 +211,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/demographics", demographicAnalyticsRoutes);
 app.use("/api/resolutions", worryResolutionRoutes);
 
-console.log('🎯 --- REGISTERED RESOLUTION ROUTES ---');
-worryResolutionRoutes.stack.forEach(function(r){
-  if (r.route && r.route.path){
-    console.log(r.route.path)
-  }
-});
-console.log('------------------------------------');
+
 app.use("/api/wellness", wellnessRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/languages", languagesRoutes);
@@ -324,6 +318,14 @@ const server = app.listen(PORT, async () => {
 
     // Simple ready message
     console.log(`🎯 Worrybox API server ready and running on port ${PORT}`);
+
+    console.log('🎯 --- REGISTERED RESOLUTION ROUTES ---');
+    worryResolutionRoutes.stack.forEach(function(r){
+      if (r.route && r.route.path){
+        console.log(r.route.path)
+      }
+    });
+    console.log('------------------------------------');
 
     if (isDevelopment) {
       logger.info("🎯 Worrybox API server ready and running", {

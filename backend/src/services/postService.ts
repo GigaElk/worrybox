@@ -640,32 +640,30 @@ export class PostService {
     userHasMeToo?: boolean;
   }> {
     try {
-      // Get all interaction counts in parallel with proper error handling
+      // Isolate the AI analysis query to prevent it from crashing the entire data fetch
+      let worryAnalysis: { similarWorryCount: number } | null = null;
+      try {
+        worryAnalysis = await prisma.worryAnalysis.findUnique({
+          where: { postId },
+          select: { similarWorryCount: true },
+        });
+      } catch (e) {
+        console.error(`AI analysis query failed for post ${postId}. Returning post without it.`, e);
+        // On failure, worryAnalysis remains null, which is handled below
+      }
+
+      // Get other interaction counts in parallel
       const [
         supportCount,
         meTooCount,
-        worryAnalysis,
         userSupport,
         userMeToo
       ] = await Promise.all([
-        // Support count - handle potential errors gracefully
         prisma.like.count({ where: { postId } }).catch(() => 0),
-        
-        // MeToo count - handle potential errors gracefully
         prisma.meToo.count({ where: { postId } }).catch(() => 0),
-        
-        // AI similar worry count from analysis - handle missing analysis
-        prisma.worryAnalysis.findUnique({
-          where: { postId },
-          select: { similarWorryCount: true }
-        }).catch(() => null),
-        
-        // User's support status (if requesting user provided)
         requestingUserId ? prisma.like.findFirst({
           where: { postId, userId: requestingUserId }
         }).catch(() => null) : Promise.resolve(null),
-        
-        // User's MeToo status (if requesting user provided)
         requestingUserId ? prisma.meToo.findFirst({
           where: { postId, userId: requestingUserId }
         }).catch(() => null) : Promise.resolve(null)
@@ -684,8 +682,8 @@ export class PostService {
         userHasMeToo: requestingUserId ? !!userMeToo : undefined,
       };
     } catch (error) {
-      // If there's a critical error, return safe defaults
-      console.error('Error fetching post interaction data:', error);
+      // If there's a critical error in the main block, return safe defaults
+      console.error('Critical error fetching post interaction data:', error);
       return {
         supportCount: 0,
         meTooCount: 0,

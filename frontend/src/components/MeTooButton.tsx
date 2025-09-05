@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { meTooService } from '../services/meTooService'
 import { Users, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { apiRequest } from '../utils/requestQueue'
 
 interface MeTooButtonProps {
   postId: string
@@ -29,18 +30,22 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
       try {
         setIsChecking(true)
         
-        // Always load MeToo count and similar worry count
+        // Always load MeToo count and similar worry count with throttling
         const [count, similarCount] = await Promise.all([
-          meTooService.getMeTooCount(postId),
-          meTooService.getSimilarWorryCount(postId)
+          apiRequest.low(() => meTooService.getMeTooCount(postId), `metoo-count-${postId}`),
+          apiRequest.low(() => meTooService.getSimilarWorryCount(postId), `similar-count-${postId}`)
         ])
         
-        setMeTooCount(count)
-        setSimilarWorryCount(similarCount)
+        // Ensure counts are valid numbers
+        setMeTooCount(typeof count === 'number' && !isNaN(count) ? count : 0)
+        setSimilarWorryCount(typeof similarCount === 'number' && !isNaN(similarCount) ? similarCount : 0)
         
         // Only check if user has MeToo'd if authenticated
         if (isAuthenticated) {
-          const userHasMeToo = await meTooService.hasMeToo(postId)
+          const userHasMeToo = await apiRequest.low(
+            () => meTooService.hasMeToo(postId),
+            `metoo-status-${postId}`
+          )
           setHasMeToo(userHasMeToo)
         }
       } catch (error) {
@@ -62,7 +67,8 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
     setIsLoading(true)
     try {
       if (hasMeToo) {
-        await meTooService.removeMeToo(postId)
+        // Use high priority for user interactions
+        await apiRequest.high(() => meTooService.removeMeToo(postId))
         setHasMeToo(false)
         const newMeTooCount = meTooCount - 1
         const newSimilarWorryCount = similarWorryCount - 1
@@ -71,12 +77,17 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
         
         // Dispatch meTooUpdated CustomEvent for MeTooCount component to listen
         window.dispatchEvent(new CustomEvent('meTooUpdated', {
-          detail: { postId, meTooCount: newMeTooCount, similarWorryCount: newSimilarWorryCount }
+          detail: { 
+            postId, 
+            meTooCount: typeof newMeTooCount === 'number' && !isNaN(newMeTooCount) ? newMeTooCount : 0, 
+            similarWorryCount: typeof newSimilarWorryCount === 'number' && !isNaN(newSimilarWorryCount) ? newSimilarWorryCount : 0 
+          }
         }))
         
         onMeTooChange?.(false, newMeTooCount, newSimilarWorryCount)
       } else {
-        await meTooService.addMeToo(postId)
+        // Use high priority for user interactions
+        await apiRequest.high(() => meTooService.addMeToo(postId))
         setHasMeToo(true)
         const newMeTooCount = meTooCount + 1
         const newSimilarWorryCount = similarWorryCount + 1
@@ -85,7 +96,11 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
         
         // Dispatch meTooUpdated CustomEvent for MeTooCount component to listen
         window.dispatchEvent(new CustomEvent('meTooUpdated', {
-          detail: { postId, meTooCount: newMeTooCount, similarWorryCount: newSimilarWorryCount }
+          detail: { 
+            postId, 
+            meTooCount: typeof newMeTooCount === 'number' && !isNaN(newMeTooCount) ? newMeTooCount : 0, 
+            similarWorryCount: typeof newSimilarWorryCount === 'number' && !isNaN(newSimilarWorryCount) ? newSimilarWorryCount : 0 
+          }
         }))
         
         onMeTooChange?.(true, newMeTooCount, newSimilarWorryCount)
@@ -104,10 +119,11 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
     return 'Me too'
   }
 
-  const getSimilarWorryText = () => {
-    if (similarWorryCount === 0) return ''
-    if (similarWorryCount === 1) return '1 person has similar worries'
-    return `${similarWorryCount} people have similar worries`
+  const getMeTooCountText = () => {
+    const count = typeof meTooCount === 'number' && !isNaN(meTooCount) ? meTooCount : 0
+    if (count === 0) return 'Be the first to say "me too"'
+    if (count === 1) return '1 person said "me too"'
+    return `${count} people said "me too"`
   }
 
   return (
@@ -130,8 +146,11 @@ const MeTooButton: React.FC<MeTooButtonProps> = ({
         />
       )}
       {showCount && (
-        <span className="text-sm font-medium" title={getSimilarWorryText()}>
-          {similarWorryCount > 0 ? similarWorryCount : ''}
+        <span className="text-sm font-medium" title={getMeTooCountText()}>
+          {(() => {
+            const count = typeof meTooCount === 'number' && !isNaN(meTooCount) ? meTooCount : 0
+            return count > 0 ? count : ''
+          })()}
         </span>
       )}
     </button>

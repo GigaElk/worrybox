@@ -269,11 +269,22 @@ export const worryAnalysisService = {
         breakdown: includeBreakdown.toString()
       })
 
-      return await this._retryApiCall(
+      const response = await this._retryApiCall(
         () => api.get(`/analysis/posts/${postId}/similar-count?${params}`).then(response => response.data.data),
         options,
         'Get similar worry count'
       )
+      
+      // Ensure count is a valid number
+      return {
+        count: typeof response.count === 'number' && !isNaN(response.count) ? response.count : 0,
+        breakdown: response.breakdown ? {
+          aiDetectedSimilar: typeof response.breakdown.aiDetectedSimilar === 'number' && !isNaN(response.breakdown.aiDetectedSimilar) 
+            ? response.breakdown.aiDetectedSimilar : 0,
+          meTooResponses: typeof response.breakdown.meTooResponses === 'number' && !isNaN(response.breakdown.meTooResponses) 
+            ? response.breakdown.meTooResponses : 0
+        } : undefined
+      }
     } catch (error) {
       console.warn('Enhanced similar worry count API not available, returning fallback')
       // Return basic count as fallback

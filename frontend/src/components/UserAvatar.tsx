@@ -67,9 +67,34 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase()
   }
 
+  // Validate if URL is actually a valid image URL
+  const isValidImageUrl = (url: string): boolean => {
+    if (!url) return false
+    
+    // Check if it's a UUID (post ID) - these are not valid image URLs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(url)) {
+      console.warn('Invalid avatarUrl detected (UUID):', url)
+      return false
+    }
+    
+    // Check if it starts with http/https or is a relative path
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+      console.warn('Invalid avatarUrl detected (not a URL):', url)
+      return false
+    }
+    
+    return true
+  }
+
   // Generate optimized Cloudinary URL
   const getOptimizedImageUrl = () => {
     if (!user.avatarUrl || imageError) return null
+    
+    // Validate the URL before processing
+    if (!isValidImageUrl(user.avatarUrl)) {
+      return null
+    }
 
     // Get dimensions based on size
     const dimensions = {

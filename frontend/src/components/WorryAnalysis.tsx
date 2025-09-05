@@ -17,6 +17,7 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false)
 
   useEffect(() => {
     loadAnalysis()
@@ -26,11 +27,23 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
     try {
       setIsLoading(true)
       setError(null)
+      setIsQuotaExceeded(false)
       const result = await worryAnalysisService.getWorryAnalysis(postId)
       setAnalysis(result)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load worry analysis:', error)
-      setError('Failed to load analysis')
+      
+      // Check if this is a quota exceeded error
+      const errorMessage = error.response?.data?.error?.message || error.message || ''
+      if (errorMessage.toLowerCase().includes('quota') || 
+          errorMessage.toLowerCase().includes('rate limit') ||
+          errorMessage.toLowerCase().includes('exceeded') ||
+          error.response?.status === 429) {
+        setIsQuotaExceeded(true)
+        setError('Analysis service temporarily unavailable due to high usage. Please try again later.')
+      } else {
+        setError('Failed to load analysis')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -40,11 +53,23 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
     try {
       setIsAnalyzing(true)
       setError(null)
+      setIsQuotaExceeded(false)
       const result = await worryAnalysisService.analyzeWorry(postId)
       setAnalysis(result)
     } catch (error: any) {
       console.error('Failed to analyze worry:', error)
-      setError(error.response?.data?.error?.message || 'Failed to analyze worry')
+      
+      // Check if this is a quota exceeded error
+      const errorMessage = error.response?.data?.error?.message || error.message || ''
+      if (errorMessage.toLowerCase().includes('quota') || 
+          errorMessage.toLowerCase().includes('rate limit') ||
+          errorMessage.toLowerCase().includes('exceeded') ||
+          error.response?.status === 429) {
+        setIsQuotaExceeded(true)
+        setError('Analysis service temporarily unavailable due to high usage. Please try again later.')
+      } else {
+        setError(error.response?.data?.error?.message || 'Failed to analyze worry')
+      }
     } finally {
       setIsAnalyzing(false)
     }
@@ -83,24 +108,46 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
 
   if (error) {
     return (
-      <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className}`}>
-        <div className="flex items-center space-x-2 text-red-600 mb-2">
+      <div className={`${isQuotaExceeded ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 ${className}`}>
+        <div className={`flex items-center space-x-2 ${isQuotaExceeded ? 'text-yellow-600' : 'text-red-600'} mb-2`}>
           <AlertTriangle className="w-5 h-5" />
-          <h3 className="font-medium">Analysis Error</h3>
+          <h3 className="font-medium">
+            {isQuotaExceeded ? 'Analysis Temporarily Unavailable' : 'Analysis Error'}
+          </h3>
         </div>
-        <p className="text-red-700">{error}</p>
-        <button
-          onClick={loadAnalysis}
-          className="mt-3 text-sm text-red-600 hover:text-red-800 underline"
-        >
-          Try Again
-        </button>
+        <p className={`${isQuotaExceeded ? 'text-yellow-700' : 'text-red-700'}`}>{error}</p>
+        {!isQuotaExceeded && (
+          <button
+            onClick={loadAnalysis}
+            className="mt-3 text-sm text-red-600 hover:text-red-800 underline"
+          >
+            Try Again
+          </button>
+        )}
+        {isQuotaExceeded && (
+          <div className="mt-3 text-sm text-yellow-700">
+            💡 The analysis feature uses AI services that have daily usage limits. 
+            Other features like viewing similar worries and MeToo counts are still available.
+          </div>
+        )}
       </div>
     )
   }
 
   if (!analysis) {
-    if (!showAnalyzeButton) return null
+    if (!showAnalyzeButton) {
+      return (
+        <div className={`bg-gray-50 border border-gray-200 rounded-lg p-6 ${className}`}>
+          <div className="text-center">
+            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Analysis Not Available</h3>
+            <p className="text-gray-600">
+              Analysis cannot be performed at this time. Other features like viewing similar worries are still available.
+            </p>
+          </div>
+        </div>
+      )
+    }
     
     return (
       <div className={`bg-white border border-gray-200 rounded-lg p-6 ${className}`}>
@@ -110,7 +157,7 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
           <p className="text-gray-600 mb-4">This worry hasn't been analyzed yet.</p>
           <button
             onClick={handleAnalyze}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || isQuotaExceeded}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
           >
             {isAnalyzing ? (
@@ -121,10 +168,15 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
             ) : (
               <>
                 <Brain className="w-4 h-4" />
-                <span>Analyze This Worry</span>
+                <span>{isQuotaExceeded ? 'Analysis Temporarily Unavailable' : 'Analyze This Worry'}</span>
               </>
             )}
           </button>
+          {isQuotaExceeded && (
+            <p className="text-sm text-yellow-600 mt-3">
+              Analysis service is temporarily unavailable due to high usage.
+            </p>
+          )}
         </div>
       </div>
     )
@@ -226,7 +278,7 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
           <div className="pt-4 border-t border-gray-100">
             <button
               onClick={handleAnalyze}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || isQuotaExceeded}
               className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
             >
               {isAnalyzing ? (
@@ -237,10 +289,15 @@ const WorryAnalysis: React.FC<WorryAnalysisProps> = ({
               ) : (
                 <>
                   <Brain className="w-4 h-4" />
-                  <span>Re-analyze</span>
+                  <span>{isQuotaExceeded ? 'Analysis Unavailable' : 'Re-analyze'}</span>
                 </>
               )}
             </button>
+            {isQuotaExceeded && (
+              <p className="text-xs text-yellow-600 mt-2">
+                Analysis temporarily unavailable due to service limits.
+              </p>
+            )}
           </div>
         )}
       </div>

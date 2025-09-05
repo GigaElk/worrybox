@@ -58,14 +58,26 @@ export const meTooService = {
 
   // Get MeToo count for a post
   async getMeTooCount(postId: string): Promise<number> {
-    const response = await api.get(`/metoo/${postId}/count`)
-    return response.data.data.count
+    try {
+      const response = await api.get(`/metoo/${postId}/count`)
+      const count = response.data.data.count
+      return typeof count === 'number' && !isNaN(count) ? count : 0
+    } catch (error) {
+      console.warn(`Failed to get MeToo count for post ${postId}:`, error)
+      return 0
+    }
   },
 
   // Get similar worry count (AI + MeToo combined)
   async getSimilarWorryCount(postId: string): Promise<number> {
-    const response = await api.get(`/metoo/${postId}/similar-worry-count`)
-    return response.data.data.count
+    try {
+      const response = await api.get(`/metoo/${postId}/similar-worry-count`)
+      const count = response.data.data.count
+      return typeof count === 'number' && !isNaN(count) ? count : 0
+    } catch (error) {
+      console.warn(`Failed to get similar worry count for post ${postId}:`, error)
+      return 0
+    }
   },
 
   // Get MeToos for a post with pagination

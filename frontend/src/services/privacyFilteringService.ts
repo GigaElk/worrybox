@@ -120,7 +120,12 @@ class PrivacyFilteringService {
     response: SimilarWorriesResponse,
     currentUserId?: string
   ): SimilarWorriesResponse {
-    const filteredWorries = response.similarWorries.filter(worry => {
+    // If the response is falsy, return a valid empty response object.
+    if (!response) {
+      return { similarWorries: [], totalCount: 0, visibleCount: 0, hasMore: false };
+    }
+
+    const filteredWorries = (response.similarWorries || []).filter(worry => {
       // Allow public posts
       if (worry.privacyLevel === 'public') {
         return true

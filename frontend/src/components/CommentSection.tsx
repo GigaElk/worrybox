@@ -4,6 +4,7 @@ import { commentService, CommentResponse } from '../services/commentService'
 import { MessageCircle, Send, Edit2, Trash2, Loader2, Reply, Flag, AlertTriangle } from 'lucide-react'
 import UserAvatar from './UserAvatar'
 import toast from 'react-hot-toast'
+import { apiRequest } from '../utils/requestQueue'
 
 interface CommentSectionProps {
   postId: string
@@ -34,9 +35,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
   const loadComments = async () => {
     try {
       setIsLoading(true)
+      // Use request queue with normal priority for comments
       const [commentsData, count] = await Promise.all([
-        commentService.getCommentsWithReplies(postId, 10, 0), // Use threaded comments
-        commentService.getCommentCount(postId)
+        apiRequest.normal(() => commentService.getCommentsWithReplies(postId, 10, 0), `comments-${postId}`),
+        apiRequest.normal(() => commentService.getCommentCount(postId), `comment-count-${postId}`)
       ])
       setComments(commentsData.comments)
       setCommentCount(count)
@@ -62,9 +64,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
 
     setIsSubmitting(true)
     try {
-      const comment = await commentService.createComment(postId, {
+      // Use high priority for user interactions
+      const comment = await apiRequest.high(() => commentService.createComment(postId, {
         content: newComment.trim()
-      })
+      }))
       setComments(prev => [comment, ...prev])
       setCommentCount(prev => prev + 1)
       setNewComment('')
@@ -80,9 +83,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
     if (!editContent.trim()) return
 
     try {
-      const updatedComment = await commentService.updateComment(commentId, {
+      // Use high priority for user interactions
+      const updatedComment = await apiRequest.high(() => commentService.updateComment(commentId, {
         content: editContent.trim()
-      })
+      }))
       setComments(prev => prev.map(c => c.id === commentId ? updatedComment : c))
       setEditingComment(null)
       setEditContent('')
@@ -96,7 +100,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
     if (!confirm('Are you sure you want to delete this comment?')) return
 
     try {
-      await commentService.deleteComment(commentId)
+      // Use high priority for user interactions
+      await apiRequest.high(() => commentService.deleteComment(commentId))
       setComments(prev => prev.filter(c => c.id !== commentId))
       setCommentCount(prev => prev - 1)
       toast.success('Comment deleted successfully')
@@ -113,10 +118,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
     if (!replyContent.trim()) return
 
     try {
-      const reply = await commentService.createComment(postId, {
+      // Use high priority for user interactions
+      const reply = await apiRequest.high(() => commentService.createComment(postId, {
         content: replyContent.trim(),
         parentCommentId
-      })
+      }))
       
       // Add reply to the parent comment's replies array
       setComments(prev => prev.map(comment => {
@@ -145,10 +151,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, className = '',
     }
 
     try {
-      await commentService.reportComment(commentId, {
+      // Use normal priority for reporting
+      await apiRequest.normal(() => commentService.reportComment(commentId, {
         reason: reportReason,
         details: reportDetails || undefined
-      })
+      }))
       
       setReportingComment(null)
       setReportReason('spam')

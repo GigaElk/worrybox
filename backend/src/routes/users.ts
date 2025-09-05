@@ -12,6 +12,7 @@ router.get('/profile', authenticateToken, userController.getProfile);
 // Public routes (no authentication required)
 router.get('/search', searchUsersValidation, userController.searchUsers);
 router.get('/username/:username', userController.getUserByUsername);
+router.get('/:userId/likes', userController.getUserLikes);
 
 // Semi-protected routes (optional authentication)
 router.get('/username-available/:username', optionalAuth, userController.checkUsernameAvailability);

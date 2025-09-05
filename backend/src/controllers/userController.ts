@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { UserService } from '../services/userService';
+import { LikeService } from '../services/likeService';
 import { UpdateProfileRequest, UserSearchQuery } from '../types/user';
 
 const userService = new UserService();
+const likeService = new LikeService();
 
 // Validation rules
 export const updateProfileValidation = [
@@ -273,6 +275,41 @@ export class UserController {
         error: {
           code: 'USERNAME_CHECK_FAILED',
           message: 'Failed to check username availability',
+        },
+        timestamp: new Date().toISOString(),
+        path: req.path,
+      });
+    }
+  }
+
+  async getUserLikes(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+      if (!userId) {
+        return res.status(400).json({
+          error: {
+            code: 'MISSING_USER_ID',
+            message: 'User ID is required',
+          },
+          timestamp: new Date().toISOString(),
+          path: req.path,
+        });
+      }
+
+      // For now, return empty array since this is a complex query
+      // TODO: Implement in LikeService to get posts liked by user
+      res.json({
+        data: [],
+        message: 'User likes endpoint - to be implemented'
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: {
+          code: 'USER_LIKES_FETCH_FAILED',
+          message: 'Failed to fetch user likes',
         },
         timestamp: new Date().toISOString(),
         path: req.path,

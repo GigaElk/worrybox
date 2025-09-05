@@ -15,7 +15,11 @@ export interface ErrorHandlerOptions {
   fallbackMessage?: string
 }
 
-export const useErrorHandler = (options: ErrorHandlerOptions = {}) => {
+export const useErrorHandler = ({ 
+  showToast = true, 
+  logError = true, 
+  fallbackMessage = 'An unexpected error occurred'
+}: ErrorHandlerOptions = {}) => {
   const [errorState, setErrorState] = useState<ErrorState>({
     error: null,
     isError: false,
@@ -25,8 +29,6 @@ export const useErrorHandler = (options: ErrorHandlerOptions = {}) => {
   })
 
   const handleError = useCallback((error: Error | WorryAnalysisError, context?: string) => {
-    const { showToast = true, logError = true, fallbackMessage = 'An unexpected error occurred' } = options
-
     // Log error if enabled
     if (logError) {
       console.error(`Error in ${context || 'unknown context'}:`, error)
@@ -100,7 +102,7 @@ export const useErrorHandler = (options: ErrorHandlerOptions = {}) => {
         }
       }))
     }
-  }, [options])
+  }, [showToast, logError, fallbackMessage])
 
   const clearError = useCallback(() => {
     setErrorState({

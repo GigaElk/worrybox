@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { likeService } from '../services/likeService'
 import { Heart, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { apiRequest } from '../utils/requestQueue'
 
 interface LikeButtonProps {
   postId: string
@@ -28,13 +29,22 @@ const LikeButton: React.FC<LikeButtonProps> = ({
       try {
         setIsChecking(true)
         
-        // Always load support count
-        const count = await likeService.getLikeCount(postId)
+        // Use request queue with low priority for background loading
+        const countPromise = apiRequest.low(
+          () => likeService.getLikeCount(postId),
+          `like-count-${postId}`
+        )
+        
+        // Load support count
+        const count = await countPromise
         setSupportCount(count)
         
         // Only check if user has shown support if authenticated
         if (isAuthenticated) {
-          const supported = await likeService.isLiked(postId)
+          const supported = await apiRequest.low(
+            () => likeService.isLiked(postId),
+            `like-status-${postId}`
+          )
           setIsSupported(supported)
         }
       } catch (error) {
@@ -56,12 +66,14 @@ const LikeButton: React.FC<LikeButtonProps> = ({
     setIsLoading(true)
     try {
       if (isSupported) {
-        await likeService.unlikePost(postId)
+        // Use high priority for user interactions
+        await apiRequest.high(() => likeService.unlikePost(postId))
         setIsSupported(false)
         setSupportCount(prev => prev - 1)
         onLikeChange?.(false, supportCount - 1)
       } else {
-        await likeService.likePost(postId)
+        // Use high priority for user interactions
+        await apiRequest.high(() => likeService.likePost(postId))
         setIsSupported(true)
         setSupportCount(prev => prev + 1)
         onLikeChange?.(true, supportCount + 1)

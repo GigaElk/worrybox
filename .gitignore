@@ -295,3 +295,6 @@ tramp
 uploads/
 temp-files/
 *.tmp
+
+# WARP.md - AI assistant context file
+WARP.md

@@ -12,6 +12,7 @@ import ResolutionModal from './ResolutionModal'
 import ResolutionDisplay from './ResolutionDisplay'
 import { worryResolutionService, WorryResolution } from '../services/worryResolutionService'
 import { useSafeData, safeString, safeNumber } from '../hooks/useSafeData'
+import { apiRequest } from '../utils/requestQueue'
 
 interface PostCardProps {
   post: PostResponse
@@ -56,10 +57,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
   const loadResolution = async () => {
     try {
       setIsLoadingResolution(true)
-      const resolutionData = await worryResolutionService.getResolution(post.id)
+      // Use low priority for resolution data as it's not immediately critical
+      const resolutionData = await apiRequest.low(
+        () => worryResolutionService.getResolution(post.id),
+        `resolution-${post.id}`
+      )
       setResolution(resolutionData)
-    } catch (error) {
-      console.error('Failed to load resolution:', error)
+    } catch (error: any) {
+      // Only log unexpected errors (not 404s which are handled by the service)
+      if (error.response?.status !== 404) {
+        console.error('Failed to load resolution:', error)
+      }
+      // Set resolution to null for any error case
+      setResolution(null)
     } finally {
       setIsLoadingResolution(false)
     }
@@ -77,7 +87,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
   const handleUnresolve = async () => {
     if (window.confirm('Are you sure you want to mark this worry as unresolved?')) {
       try {
-        await worryResolutionService.unresolveWorry(post.id)
+        // Use high priority for user actions
+        await apiRequest.high(() => worryResolutionService.unresolveWorry(post.id))
         setResolution(null)
       } catch (error) {
         console.error('Failed to unresolve worry:', error)

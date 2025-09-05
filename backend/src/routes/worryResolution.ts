@@ -17,6 +17,8 @@ const worryResolutionController = new WorryResolutionController();
 
 // Public routes (no authentication required)
 router.get('/stories', getPublicResolutionStoriesValidation, worryResolutionController.getPublicResolutionStories);
+// Allow public access to check if a resolution exists for a post
+router.get('/posts/:postId', worryResolutionController.getResolution);
 
 // Protected routes (authentication required)
 router.use(authenticateToken);
@@ -25,13 +27,10 @@ router.use(authenticateToken);
 router.post('/posts/:postId/resolve', resolveWorryValidation, worryResolutionController.resolveWorry);
 router.put('/posts/:postId/resolve', updateResolutionValidation, worryResolutionController.updateResolution);
 router.delete('/posts/:postId/resolve', getResolutionValidation, worryResolutionController.unresolveWorry);
-
-// Get resolution data
-router.get('/posts/:postId', worryResolutionController.getResolution);
 router.get('/users/:userId/resolved', getUserResolvedWorriesValidation, worryResolutionController.getUserResolvedWorries);
 router.get('/stats', worryResolutionController.getResolutionStats);
 
 // Resolution suggestions
 router.get('/posts/:postId/suggestions', getResolutionSuggestionsValidation, worryResolutionController.getResolutionSuggestions);
 
-export default router;
+export { router as worryResolutionRoutes };

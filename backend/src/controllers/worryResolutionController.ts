@@ -222,7 +222,7 @@ export class WorryResolutionController {
         return res.status(404).json({
           error: {
             code: 'RESOLUTION_NOT_FOUND',
-            message: 'Resolution not found or not accessible',
+            message: 'No resolution found for this post',
           },
           timestamp: new Date().toISOString(),
           path: req.path,

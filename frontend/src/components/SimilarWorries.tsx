@@ -3,6 +3,7 @@ import { SimilarWorryCountResponse } from '../services/worryAnalysisService'
 import { privacyFilteringService } from '../services/privacyFilteringService'
 import { Loader2, AlertTriangle, Users, TrendingUp, BarChart3 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { apiRequest } from '../utils/requestQueue'
 
 interface SimilarWorriesProps {
   postId: string
@@ -35,12 +36,15 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
   useEffect(() => {
     const handleMeTooUpdate = (event: CustomEvent) => {
       if (event.detail.postId === postId && countData) {
+        const similarWorryCount = typeof event.detail.similarWorryCount === 'number' ? event.detail.similarWorryCount : 0
+        const meTooCount = typeof event.detail.meTooCount === 'number' ? event.detail.meTooCount : 0
+        
         const newCountData = {
           ...countData,
-          count: event.detail.similarWorryCount,
+          count: similarWorryCount,
           breakdown: countData.breakdown ? {
             ...countData.breakdown,
-            meTooResponses: event.detail.meTooCount
+            meTooResponses: meTooCount
           } : undefined
         }
         setCountData(newCountData)
@@ -59,15 +63,30 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
       setIsLoading(true)
       setError(null)
       
-      // Use the privacy filtering service with user context
-      const response = await privacyFilteringService.getSimilarWorryCount(
-        postId,
-        user?.id,
-        showBreakdown
+      // Use the privacy filtering service with user context through request queue
+      const response = await apiRequest.low(
+        () => privacyFilteringService.getSimilarWorryCount(
+          postId,
+          user?.id,
+          showBreakdown
+        ),
+        `similar-worries-${postId}-${user?.id || 'anonymous'}`
       )
       
-      setCountData(response)
-      onCountChange?.(response.count)
+      // Ensure count is a valid number
+      const sanitizedResponse = {
+        ...response,
+        count: typeof response.count === 'number' && !isNaN(response.count) ? response.count : 0,
+        breakdown: response.breakdown ? {
+          aiDetectedSimilar: typeof response.breakdown.aiDetectedSimilar === 'number' && !isNaN(response.breakdown.aiDetectedSimilar) 
+            ? response.breakdown.aiDetectedSimilar : 0,
+          meTooResponses: typeof response.breakdown.meTooResponses === 'number' && !isNaN(response.breakdown.meTooResponses) 
+            ? response.breakdown.meTooResponses : 0
+        } : undefined
+      }
+      
+      setCountData(sanitizedResponse)
+      onCountChange?.(sanitizedResponse.count)
     } catch (error: any) {
       console.error('Failed to load similar worry count:', error)
       
@@ -88,9 +107,10 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
   }
 
   const getSimilarWorryText = () => {
-    if (!countData || countData.count === 0) return 'No similar worries found'
-    if (countData.count === 1) return '1 person has similar worries'
-    return `${countData.count} people have similar worries`
+    const count = countData?.count ?? 0
+    if (!countData || count === 0) return 'No similar worries found'
+    if (count === 1) return '1 person has similar worries'
+    return `${count} people have similar worries`
   }
 
   if (isLoading) {
@@ -119,7 +139,8 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
     )
   }
 
-  if (!countData || countData.count === 0) {
+  const count = countData?.count ?? 0
+  if (!countData || count === 0) {
     return (
       <div className={`text-sm text-gray-500 ${className}`}>
         <div className="flex items-center space-x-1">
@@ -137,7 +158,7 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
           <div className="flex items-center justify-center space-x-2 mb-1">
             <TrendingUp className="w-4 h-4 text-blue-600" />
             <span className="text-xl font-bold text-blue-600">
-              {countData.count}
+              {count}
             </span>
           </div>
           <p className="text-xs text-gray-600 mb-2">
@@ -155,13 +176,13 @@ const SimilarWorries: React.FC<SimilarWorriesProps> = ({
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-600">AI Detected:</span>
                   <span className="font-medium text-blue-600">
-                    {countData.breakdown.aiDetectedSimilar}
+                    {countData.breakdown.aiDetectedSimilar ?? 0}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-600">Me Too:</span>
                   <span className="font-medium text-pink-600">
-                    {countData.breakdown.meTooResponses}
+                    {countData.breakdown.meTooResponses ?? 0}
                   </span>
                 </div>
               </div>

@@ -20,14 +20,23 @@ export const defaultRetryOptions: Required<RetryOptions> = {
       return ![
         WorryAnalysisErrorType.NOT_FOUND,
         WorryAnalysisErrorType.PRIVACY_VIOLATION,
-        WorryAnalysisErrorType.UNAUTHORIZED
+        WorryAnalysisErrorType.UNAUTHORIZED,
+        WorryAnalysisErrorType.RATE_LIMITED
       ].includes(error.type)
+    }
+    
+    // Don't retry on quota exceeded or rate limit errors
+    const errorMessage = (error as any).response?.data?.error?.message || (error as any).message || ''
+    if (errorMessage.toLowerCase().includes('quota') || 
+        errorMessage.toLowerCase().includes('rate limit') ||
+        errorMessage.toLowerCase().includes('exceeded')) {
+      return false
     }
     
     // Don't retry on client errors (4xx)
     if ('response' in error && typeof error.response === 'object' && error.response !== null) {
       const status = (error.response as any).status
-      if (status >= 400 && status < 500 && status !== 429) {
+      if (status >= 400 && status < 500) {
         return false
       }
     }
