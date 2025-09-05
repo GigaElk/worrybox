@@ -1,9 +1,14 @@
 import { Router } from 'express';
 import { UserController, updateProfileValidation, searchUsersValidation } from '../controllers/userController';
+import { FollowController } from '../controllers/followController'; // Import FollowController
 import { authenticateToken, optionalAuth } from '../middleware/auth';
 
 const router = Router();
 const userController = new UserController();
+const followController = new FollowController(); // Instantiate FollowController
+
+// Follow/Unfollow Toggle
+router.post('/:userId/follow', authenticateToken, followController.toggleFollow);
 
 // Protected routes (require authentication)
 router.put('/profile', authenticateToken, updateProfileValidation, userController.updateProfile);

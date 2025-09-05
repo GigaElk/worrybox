@@ -459,7 +459,7 @@ export class PostService {
 
   private async formatPostResponse(post: any, requestingUserId?: string): Promise<PostResponse> {
     // Get interaction counts and user status
-    const interactionData = await this.getPostInteractionData(post.id, requestingUserId);
+    const interactionData = await this.getPostInteractionData(post.id, post.userId, requestingUserId);
 
     return {
       id: post.id,
@@ -489,11 +489,8 @@ export class PostService {
   private async formatMultiplePostResponses(posts: any[], requestingUserId?: string): Promise<PostResponse[]> {
     if (posts.length === 0) return [];
 
-    // Extract all post IDs for batch processing
-    const postIds = posts.map(post => post.id);
-
     // Batch fetch all interaction data to reduce database queries
-    const batchInteractionData = await this.getBatchPostInteractionData(postIds, requestingUserId);
+    const batchInteractionData = await this.getBatchPostInteractionData(posts, requestingUserId);
 
     // Format each post with its corresponding interaction data
     return posts.map(post => {
@@ -503,6 +500,7 @@ export class PostService {
         similarWorryCount: 0,
         userHasShownSupport: requestingUserId ? false : undefined,
         userHasMeToo: requestingUserId ? false : undefined,
+        isFollowingAuthor: requestingUserId ? false : undefined,
       };
 
       return {
@@ -531,23 +529,30 @@ export class PostService {
   }
 
   // Batch method for fetching interaction data for multiple posts
-  private async getBatchPostInteractionData(postIds: string[], requestingUserId?: string): Promise<{
+  private async getBatchPostInteractionData(posts: any[], requestingUserId?: string): Promise<{
     [postId: string]: {
       supportCount: number;
       meTooCount: number;
       similarWorryCount: number;
       userHasShownSupport?: boolean;
       userHasMeToo?: boolean;
+      isFollowingAuthor?: boolean;
     }
   }> {
     try {
+      const postIds = posts.map(p => p.id);
+      const authorIds = requestingUserId 
+        ? [...new Set(posts.map(p => p.userId).filter(id => id !== requestingUserId))] 
+        : [];
+
       // Batch fetch all interaction data
       const [
         supportCounts,
         meTooCountsData,
         worryAnalyses,
         userSupports,
-        userMeToos
+        userMeToos,
+        userFollows
       ] = await Promise.all([
         // Batch support counts
         prisma.like.groupBy({
@@ -579,6 +584,15 @@ export class PostService {
         requestingUserId ? prisma.meToo.findMany({
           where: { postId: { in: postIds }, userId: requestingUserId },
           select: { postId: true }
+        }).catch(() => []) : Promise.resolve([]),
+
+        // Batch user follow status
+        requestingUserId && authorIds.length > 0 ? prisma.follow.findMany({
+          where: {
+            followerId: requestingUserId,
+            followingId: { in: authorIds },
+          },
+          select: { followingId: true },
         }).catch(() => []) : Promise.resolve([])
       ]);
 
@@ -594,22 +608,24 @@ export class PostService {
       );
       const userSupportMap = new Set<string>(userSupports.map(item => item.postId));
       const userMeTooMap = new Set<string>(userMeToos.map(item => item.postId));
+      const userFollowsAuthorMap = new Set<string>(userFollows.map(item => item.followingId));
 
       // Build result object
       const result: { [postId: string]: any } = {};
       
-      for (const postId of postIds) {
-        const supportCount: number = supportCountMap.get(postId) || 0;
-        const meTooCount: number = meTooCountMap.get(postId) || 0;
-        const aiSimilarCount: number = worryAnalysisMap.get(postId) || 0;
+      for (const post of posts) {
+        const supportCount: number = supportCountMap.get(post.id) || 0;
+        const meTooCount: number = meTooCountMap.get(post.id) || 0;
+        const aiSimilarCount: number = worryAnalysisMap.get(post.id) || 0;
         const combinedSimilarWorryCount: number = aiSimilarCount + meTooCount;
 
-        result[postId] = {
+        result[post.id] = {
           supportCount,
           meTooCount,
           similarWorryCount: combinedSimilarWorryCount,
-          userHasShownSupport: requestingUserId ? userSupportMap.has(postId) : undefined,
-          userHasMeToo: requestingUserId ? userMeTooMap.has(postId) : undefined,
+          userHasShownSupport: requestingUserId ? userSupportMap.has(post.id) : undefined,
+          userHasMeToo: requestingUserId ? userMeTooMap.has(post.id) : undefined,
+          isFollowingAuthor: requestingUserId && post.userId !== requestingUserId ? userFollowsAuthorMap.has(post.userId) : undefined,
         };
       }
 
@@ -619,25 +635,27 @@ export class PostService {
       
       // Return safe defaults for all posts
       const result: { [postId: string]: any } = {};
-      for (const postId of postIds) {
-        result[postId] = {
+      for (const post of posts) {
+        result[post.id] = {
           supportCount: 0,
           meTooCount: 0,
           similarWorryCount: 0,
           userHasShownSupport: requestingUserId ? false : undefined,
           userHasMeToo: requestingUserId ? false : undefined,
+          isFollowingAuthor: requestingUserId ? false : undefined,
         };
       }
       return result;
     }
   }
 
-  private async getPostInteractionData(postId: string, requestingUserId?: string): Promise<{
+  private async getPostInteractionData(postId: string, postAuthorId: string, requestingUserId?: string): Promise<{
     supportCount: number;
     meTooCount: number;
     similarWorryCount: number;
     userHasShownSupport?: boolean;
     userHasMeToo?: boolean;
+    isFollowingAuthor?: boolean;
   }> {
     try {
       // Isolate the AI analysis query to prevent it from crashing the entire data fetch
@@ -657,7 +675,8 @@ export class PostService {
         supportCount,
         meTooCount,
         userSupport,
-        userMeToo
+        userMeToo,
+        userFollowsAuthor
       ] = await Promise.all([
         prisma.like.count({ where: { postId } }).catch(() => 0),
         prisma.meToo.count({ where: { postId } }).catch(() => 0),
@@ -666,7 +685,10 @@ export class PostService {
         }).catch(() => null) : Promise.resolve(null),
         requestingUserId ? prisma.meToo.findFirst({
           where: { postId, userId: requestingUserId }
-        }).catch(() => null) : Promise.resolve(null)
+        }).catch(() => null) : Promise.resolve(null),
+        requestingUserId && postAuthorId !== requestingUserId ? prisma.follow.findFirst({
+          where: { followerId: requestingUserId, followingId: postAuthorId },
+        }).catch(() => null) : Promise.resolve(null),
       ]);
 
       // Calculate combined similar worry count (AI + MeToo) with safe defaults
@@ -680,6 +702,7 @@ export class PostService {
         similarWorryCount: combinedSimilarWorryCount,
         userHasShownSupport: requestingUserId ? !!userSupport : undefined,
         userHasMeToo: requestingUserId ? !!userMeToo : undefined,
+        isFollowingAuthor: requestingUserId ? !!userFollowsAuthor : undefined,
       };
     } catch (error) {
       // If there's a critical error in the main block, return safe defaults
@@ -690,6 +713,7 @@ export class PostService {
         similarWorryCount: 0,
         userHasShownSupport: requestingUserId ? false : undefined,
         userHasMeToo: requestingUserId ? false : undefined,
+        isFollowingAuthor: requestingUserId ? false : undefined,
       };
     }
   }

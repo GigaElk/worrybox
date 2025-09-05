@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import LikeButton from './LikeButton'
 import MeTooButton from './MeTooButton'
+import FollowButton from './FollowButton' // <-- IMPORT
 import UserAvatar from './UserAvatar'
 import CommentSection from './CommentSection'
 import SimilarWorries from './SimilarWorries'
@@ -203,73 +204,81 @@ const PostCard: React.FC<PostCardProps> = ({ post, onEdit, onDelete, onEditBlog,
           </div>
         </div>
 
-        {/* Menu */}
-        {isOwner && (
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+        {/* Follow Button and Menu */}
+        <div className="flex items-center space-x-2">
+          {!isOwner && currentUser && (
+            <FollowButton 
+              authorId={post.user.id}
+              initialIsFollowing={post.isFollowingAuthor || false}
+            />
+          )}
+          {isOwner && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
 
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={handleEdit}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Post
-                  </button>
-                  <button
-                    onClick={handleEditBlog}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    {hasLongContent ? (
-                      <>
-                        <FileText className="w-4 h-4 mr-2" />
-                        Edit Blog Content
-                      </>
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={handleEdit}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Post
+                    </button>
+                    <button
+                      onClick={handleEditBlog}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {hasLongContent ? (
+                        <>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Edit Blog Content
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Blog Content
+                        </>
+                      )}
+                    </button>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    {resolution ? (
+                      <button
+                        onClick={handleUnresolve}
+                        className="flex items-center w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Unresolved
+                      </button>
                     ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Blog Content
-                      </>
+                      <button
+                        onClick={handleMarkAsResolved}
+                        className="flex items-center w-full px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Resolved
+                      </button>
                     )}
-                  </button>
-                  <div className="border-t border-gray-100 my-1"></div>
-                  {resolution ? (
+                    <div className="border-t border-gray-100 my-1"></div>
                     <button
-                      onClick={handleUnresolve}
-                      className="flex items-center w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                      onClick={handleDelete}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Unresolved
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Post
                     </button>
-                  ) : (
-                    <button
-                      onClick={handleMarkAsResolved}
-                      className="flex items-center w-full px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Resolved
-                    </button>
-                  )}
-                  <div className="border-t border-gray-100 my-1"></div>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Post
-                  </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Worry Prompt */}

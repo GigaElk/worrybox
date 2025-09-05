@@ -1,112 +1,74 @@
-import React, { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { followService } from '../services/followService'
-import { Loader2 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
+import { Loader2, UserPlus, UserCheck } from 'lucide-react';
 
 interface FollowButtonProps {
-  userId: string
-  onFollowChange?: (isFollowing: boolean) => void
-  className?: string
+  authorId: string;
+  initialIsFollowing: boolean;
 }
 
-const FollowButton: React.FC<FollowButtonProps> = ({ userId, onFollowChange, className = '' }) => {
-  const { user: currentUser, isAuthenticated } = useAuth()
-  const [isFollowing, setIsFollowing] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isChecking, setIsChecking] = useState(true)
-
-  // Don't show button for own profile
-  const isOwnProfile = currentUser?.id === userId
+const FollowButton: React.FC<FollowButtonProps> = ({ authorId, initialIsFollowing }) => {
+  const { user } = useAuth();
+  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const checkFollowStatus = async () => {
-      if (!isAuthenticated || isOwnProfile) {
-        setIsChecking(false)
-        return
-      }
+    setIsFollowing(initialIsFollowing);
+  }, [initialIsFollowing]);
 
-      try {
-        setIsChecking(true)
-        const following = await followService.isFollowing(userId)
-        setIsFollowing(following)
-      } catch (error) {
-        console.error('Failed to check follow status:', error)
-      } finally {
-        setIsChecking(false)
-      }
-    }
+  const handleFollowToggle = async () => {
+    if (!user || isLoading) return;
 
-    checkFollowStatus()
-  }, [userId, isAuthenticated, isOwnProfile])
+    setIsLoading(true);
+    const originalFollowState = isFollowing;
 
-  const handleFollow = async () => {
-    if (!isAuthenticated) {
-      toast.error('Please log in to follow users')
-      return
-    }
+    // Optimistic update
+    setIsFollowing(!originalFollowState);
 
-    setIsLoading(true)
     try {
-      if (isFollowing) {
-        await followService.unfollowUser(userId)
-        toast.success('Unfollowed successfully')
-        setIsFollowing(false)
-        onFollowChange?.(false)
-      } else {
-        await followService.followUser(userId)
-        toast.success('Followed successfully')
-        setIsFollowing(true)
-        onFollowChange?.(true)
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'Failed to update follow status')
-    } finally {
-      setIsLoading(false)
+      const response = await api.post(`/users/${authorId}/follow`);
+      // Update state with response from server
+      setIsFollowing(response.data.data.isFollowing);
+    } catch (error) { 
+      console.error('Failed to toggle follow state', error);
+      // Revert on error
+      setIsFollowing(originalFollowState);
+      // Optionally show a toast notification here
     }
-  }
+    setIsLoading(false);
+  };
 
-  // Don't render for own profile
-  if (isOwnProfile) {
-    return null
-  }
-
-  // Don't render if not authenticated
-  if (!isAuthenticated) {
-    return null
-  }
-
-  // Show loading state while checking follow status
-  if (isChecking) {
-    return (
-      <button
-        disabled
-        className={`px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed ${className}`}
-      >
-        <Loader2 className="w-4 h-4 animate-spin" />
-      </button>
-    )
+  // Don't render the button if there is no logged-in user or if it's the user's own post
+  if (!user || user.userId === authorId) {
+    return null;
   }
 
   return (
     <button
-      onClick={handleFollow}
+      onClick={handleFollowToggle}
       disabled={isLoading}
-      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+      className={`px-3 py-1 text-sm font-semibold rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
         isFollowing
-          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300'
-          : 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-600'
-      } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+      }`}
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : isFollowing ? (
-        'Following'
+        <>
+          <UserCheck className="w-4 h-4 mr-1" />
+          Following
+        </>
       ) : (
-        'Follow'
+        <>
+          <UserPlus className="w-4 h-4 mr-1" />
+          Follow
+        </>
       )}
     </button>
-  )
-}
+  );
+};
 
-export default FollowButton
+export default FollowButton;

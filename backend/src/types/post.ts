@@ -46,6 +46,7 @@ export interface PostResponse {
   similarWorryCount?: number; // Combined AI + MeToo count
   userHasShownSupport?: boolean;
   userHasMeToo?: boolean;
+  isFollowingAuthor?: boolean;
 }
 
 export interface PostsQuery {

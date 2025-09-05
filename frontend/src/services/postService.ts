@@ -42,6 +42,13 @@ export interface PostResponse {
     displayName?: string
     avatarUrl?: string
   }
+  // Interaction data
+  supportCount?: number;
+  meTooCount?: number;
+  similarWorryCount?: number;
+  userHasShownSupport?: boolean;
+  userHasMeToo?: boolean;
+  isFollowingAuthor?: boolean;
 }
 
 export interface PostsQuery {
